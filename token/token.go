@@ -9,6 +9,10 @@ type Token struct {
 	Literal string
 }
 
+func New(ty TokenType, lit string) Token {
+	return Token{Type: ty, Literal: lit}
+}
+
 const (
 	Illegal = "ILLEGAL"
 	EOF     = "EOF"
