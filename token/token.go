@@ -7,10 +7,11 @@ type TokenType string
 type Token struct {
 	Type    TokenType
 	Literal string
+	Line    int
 }
 
-func New(ty TokenType, lit string) Token {
-	return Token{Type: ty, Literal: lit}
+func New(ty TokenType, lit string, line int) Token {
+	return Token{Type: ty, Literal: lit, Line: line}
 }
 
 const (
