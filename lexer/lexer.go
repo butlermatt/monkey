@@ -16,6 +16,14 @@ func New(input string) *Lexer {
 	return l
 }
 
+func (l *Lexer) peek() byte {
+	if l.readPos >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPos]
+	}
+}
+
 func (l *Lexer) readChar() {
 	if l.readPos >= len(l.input) {
 		l.ch = 0
@@ -29,6 +37,8 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
+
+	l.skipWhitespace()
 
 	switch l.ch {
 	case '=':
@@ -49,10 +59,70 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.RBrace, l.ch, l.line)
 	case 0:
 		tok = token.New(token.EOF, "", l.line)
+	default:
+		if isAlpha(l.ch) {
+			tok.Line = l.line
+			tok.Literal = l.readIdentifier()
+			tok.Type = token.LookupIdent(tok.Literal)
+			return tok
+		} else if isNumber(l.ch) {
+			tok.Line = l.line
+			tok.Type = token.Num
+			tok.Literal = l.readNumber()
+			return tok
+		} else {
+			tok = newToken(token.Illegal, l.ch, l.line)
+		}
 	}
 
 	l.readChar()
 	return tok
+}
+
+func (l *Lexer) readIdentifier() string {
+	position := l.position
+	for isAlphaNumeric(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		if l.ch == '\n' {
+			l.line += 1
+		}
+
+		l.readChar()
+	}
+}
+
+func (l *Lexer) readNumber() string {
+	position := l.position
+	for isNumber(l.ch) {
+		l.readChar()
+	}
+
+	if l.ch == '.' && isNumber(l.peek()) {
+		l.readChar()
+		for isNumber(l.ch) {
+			l.readChar()
+		}
+	}
+
+	return l.input[position:l.position]
+}
+
+func isAlphaNumeric(ch byte) bool {
+	return isAlpha(ch) || isNumber(ch)
+}
+
+func isAlpha(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func isNumber(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
 
 func newToken(ty token.TokenType, ch byte, line int) token.Token {

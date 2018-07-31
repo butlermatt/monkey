@@ -20,7 +20,7 @@ const (
 
 	// Identifiers & literals
 	Ident = "IDENT"
-	Int   = "INT"
+	Num   = "NUM"
 
 	// Operators
 	Assign = "="
@@ -39,3 +39,17 @@ const (
 	Function = "FUNCTION"
 	Let      = "LET"
 )
+
+var keywords = map[string]TokenType{
+	"fn":  Function,
+	"let": Let,
+}
+
+// LookupIdent returns the appropriate TokenType based on the ident string provided.
+func LookupIdent(ident string) TokenType {
+	if tok, ok := keywords[ident]; ok {
+		return tok
+	}
+
+	return Ident
+}
