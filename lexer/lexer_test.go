@@ -15,7 +15,14 @@ let add = fn(x, y) {
 };
 
 let result = add(five, ten);
-`
+!-/*5;
+5 < 10.0 > 5;
+
+if (5 < 10.0) {
+    return true;
+} else {
+    return false;
+}`
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -73,7 +80,42 @@ let result = add(five, ten);
 		{token.RParen, ")", 9},
 		{token.Semicolon, ";", 9},
 
-		{token.EOF, "", 10},
+		{token.Bang, "!", 10},
+		{token.Minus, "-", 10},
+		{token.Slash, "/", 10},
+		{token.Star, "*", 10},
+		{token.Num, "5", 10},
+		{token.Semicolon, ";", 10},
+
+		{token.Num, "5", 11},
+		{token.LT, "<", 11},
+		{token.Num, "10.0", 11},
+		{token.GT, ">", 11},
+		{token.Num, "5", 11},
+		{token.Semicolon, ";", 11},
+
+		{token.If, "if", 13},
+		{token.LParen, "(", 13},
+		{token.Num, "5", 13},
+		{token.LT, "<", 13},
+		{token.Num, "10.0", 13},
+		{token.RParen, ")", 13},
+		{token.LBrace, "{", 13},
+
+		{token.Return, "return", 14},
+		{token.True, "true", 14},
+		{token.Semicolon, ";", 14},
+
+		{token.RBrace, "}", 15},
+		{token.Else, "else", 15},
+		{token.LBrace, "{", 15},
+
+		{token.Return, "return", 16},
+		{token.False, "false", 16},
+		{token.Semicolon, ";", 16},
+
+		{token.RBrace, "}", 17},
+		{token.EOF, "", 17},
 	}
 
 	l := New(input)

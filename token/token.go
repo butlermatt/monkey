@@ -25,6 +25,14 @@ const (
 	// Operators
 	Assign = "="
 	Plus   = "+"
+	Minus  = "-"
+	Bang   = "!"
+	Star   = "*"
+	Slash  = "/"
+
+	// Comparison
+	LT = "<"
+	GT = ">"
 
 	// Delimiters
 	Comma     = ","
@@ -38,11 +46,21 @@ const (
 	// Keywords
 	Function = "FUNCTION"
 	Let      = "LET"
+	True     = "TRUE"
+	False    = "FALSE"
+	If       = "IF"
+	Else     = "ELSE"
+	Return   = "RETURN"
 )
 
 var keywords = map[string]TokenType{
-	"fn":  Function,
-	"let": Let,
+	"fn":     Function,
+	"let":    Let,
+	"if":     If,
+	"else":   Else,
+	"true":   True,
+	"false":  False,
+	"return": Return,
 }
 
 // LookupIdent returns the appropriate TokenType based on the ident string provided.
