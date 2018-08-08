@@ -22,7 +22,12 @@ if (5 < 10.0) {
     return true;
 } else {
     return false;
-}`
+}
+
+10.0 == 10.0;
+10.0 != 9;
+9 <= 10.0 >= 5;
+`
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -88,16 +93,16 @@ if (5 < 10.0) {
 		{token.Semicolon, ";", 10},
 
 		{token.Num, "5", 11},
-		{token.LT, "<", 11},
+		{token.Lt, "<", 11},
 		{token.Num, "10.0", 11},
-		{token.GT, ">", 11},
+		{token.Gt, ">", 11},
 		{token.Num, "5", 11},
 		{token.Semicolon, ";", 11},
 
 		{token.If, "if", 13},
 		{token.LParen, "(", 13},
 		{token.Num, "5", 13},
-		{token.LT, "<", 13},
+		{token.Lt, "<", 13},
 		{token.Num, "10.0", 13},
 		{token.RParen, ")", 13},
 		{token.LBrace, "{", 13},
@@ -115,7 +120,25 @@ if (5 < 10.0) {
 		{token.Semicolon, ";", 16},
 
 		{token.RBrace, "}", 17},
-		{token.EOF, "", 17},
+
+		{token.Num, "10.0", 19},
+		{token.Eq, "==", 19},
+		{token.Num, "10.0", 19},
+		{token.Semicolon, ";", 19},
+
+		{token.Num, "10.0", 20},
+		{token.NotEq, "!=", 20},
+		{token.Num, "9", 20},
+		{token.Semicolon, ";", 20},
+
+		{token.Num, "9", 21},
+		{token.LtEq, "<=", 21},
+		{token.Num, "10.0", 21},
+		{token.GtEq, ">=", 21},
+		{token.Num, "5", 21},
+		{token.Semicolon, ";", 21},
+
+		{token.EOF, "", 22},
 	}
 
 	l := New(input)

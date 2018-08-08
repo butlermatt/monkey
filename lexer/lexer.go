@@ -42,7 +42,13 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = newToken(token.Assign, l.ch, l.line)
+		if l.peek() == '=' {
+			pos := l.position
+			l.readChar()
+			tok = token.New(token.Eq, l.input[pos:l.readPos], l.line)
+		} else {
+			tok = newToken(token.Assign, l.ch, l.line)
+		}
 	case '+':
 		tok = newToken(token.Plus, l.ch, l.line)
 	case '-':
@@ -52,11 +58,29 @@ func (l *Lexer) NextToken() token.Token {
 	case '/':
 		tok = newToken(token.Slash, l.ch, l.line)
 	case '!':
-		tok = newToken(token.Bang, l.ch, l.line)
+		if l.peek() == '=' {
+			pos := l.position
+			l.readChar()
+			tok = token.New(token.NotEq, l.input[pos:l.readPos], l.line)
+		} else {
+			tok = newToken(token.Bang, l.ch, l.line)
+		}
 	case '<':
-		tok = newToken(token.LT, l.ch, l.line)
+		if l.peek() == '=' {
+			pos := l.position
+			l.readChar()
+			tok = token.New(token.LtEq, l.input[pos:l.readPos], l.line)
+		} else {
+			tok = newToken(token.Lt, l.ch, l.line)
+		}
 	case '>':
-		tok = newToken(token.GT, l.ch, l.line)
+		if l.peek() == '=' {
+			pos := l.position
+			l.readChar()
+			tok = token.New(token.GtEq, l.input[pos:l.readPos], l.line)
+		} else {
+			tok = newToken(token.Gt, l.ch, l.line)
+		}
 	case ';':
 		tok = newToken(token.Semicolon, l.ch, l.line)
 	case '(':

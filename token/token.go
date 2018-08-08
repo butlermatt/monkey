@@ -31,8 +31,12 @@ const (
 	Slash  = "/"
 
 	// Comparison
-	LT = "<"
-	GT = ">"
+	Eq    = "=="
+	NotEq = "!="
+	Lt    = "<"
+	Gt    = ">"
+	LtEq  = "<="
+	GtEq  = ">="
 
 	// Delimiters
 	Comma     = ","
