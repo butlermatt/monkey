@@ -6,7 +6,7 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `=+(){},;
+	input := `=+(){},;~
 let five = 5;
 let ten = 10.0;
 
@@ -42,6 +42,7 @@ if (5 < 10.0) {
 		{token.RBrace, "}", 1},
 		{token.Comma, ",", 1},
 		{token.Semicolon, ";", 1},
+		{token.Illegal, "~", 1},
 
 		{token.Let, "let", 2},
 		{token.Ident, "five", 2},
