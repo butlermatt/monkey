@@ -11,7 +11,12 @@ func TestString(t *testing.T) {
 			&LetStatement{
 				Token: token.Token{Type: token.Let, Literal: "let"},
 				Name:  &Identifier{Token: token.Token{Type: token.Ident, Literal: "myVar"}, Value: "myVar"},
+				Value: &Identifier{Token: token.Token{Type: token.Ident, Literal: "anotherVar"}, Value: "anotherVar"},
 			},
 		},
+	}
+
+	if program.String() != "let myVar = anotherVar;" {
+		t.Errorf("program.String() incorrect. got=%q", program.String())
 	}
 }

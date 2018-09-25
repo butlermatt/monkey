@@ -122,6 +122,37 @@ return 993322;
 	}
 }
 
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has incorrect number of statements. expected=%d, got=%d", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statement[0] wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*ast.Identifier, got=%T", stmt.Expression)
+	}
+
+	if ident.Value != "foobar" {
+		t.Errorf("ident value incorrect. expected=%q, got=%q", "foobar", ident.Value)
+	}
+
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident token literal incorrect. expected=%q, got=%q", "foobar", ident.TokenLiteral())
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
