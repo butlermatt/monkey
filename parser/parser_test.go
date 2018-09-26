@@ -184,6 +184,47 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestParsingPrefixExpressions(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		operator string
+		value    float64
+	}{
+		{"bang", "!5;", "!", 5.0},
+		{"minus", "-15.3;", "-", 15.3},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("program has incorrect number of statements. expected=%d, got=%d", 1, len(program.Statements))
+			}
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			if !ok {
+				t.Fatalf("program.Statement[0] wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+			}
+
+			exp, ok := stmt.Expression.(*ast.PrefixExpression)
+			if !ok {
+				t.Fatalf("expression wrong type. expected=*ast.NumberLiteral, got=%T", stmt.Expression)
+			}
+
+			if exp.Operator != tt.operator {
+				t.Fatalf("operator is wrong value. expected=%q, got=%q", tt.operator, exp.Operator)
+			}
+
+			testNumberLiteral(t, exp.Right, tt.value)
+		})
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
@@ -196,4 +237,20 @@ func checkParseErrors(t *testing.T, p *Parser) {
 	}
 
 	t.FailNow()
+}
+
+func testNumberLiteral(t *testing.T, nl ast.Expression, value float64) bool {
+	num, ok := nl.(*ast.NumberLiteral)
+	if !ok {
+		t.Errorf("expression wrong type. expected=*ast.NumberLiteral, got=%T", nl)
+		return false
+	}
+
+	if num.Value != value {
+		t.Errorf("number value is incorrect. expected=%f, got=%f", value, num.Value)
+		return false
+	}
+
+	// TODO: test string literal?
+	return true
 }
