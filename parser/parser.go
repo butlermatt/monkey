@@ -19,6 +19,19 @@ const (
 	Call        // myFunc(x)
 )
 
+var precedences = map[token.TokenType]int{
+	token.Eq:    Equals,
+	token.NotEq: Equals,
+	token.Lt:    LessGreater,
+	token.Gt:    LessGreater,
+	token.LtEq:  LessGreater,
+	token.GtEq:  LessGreater,
+	token.Plus:  Sum,
+	token.Minus: Sum,
+	token.Slash: Product,
+	token.Star:  Product,
+}
+
 type (
 	prefixParseFn func() ast.Expression
 	infixParseFn  func(ast.Expression) ast.Expression
@@ -43,6 +56,18 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.Num, p.parseNumberLiteral)
 	p.registerPrefix(token.Bang, p.parsePrefixExpression)
 	p.registerPrefix(token.Minus, p.parsePrefixExpression)
+
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.Plus, p.parseInfixExpressions)
+	p.registerInfix(token.Minus, p.parseInfixExpressions)
+	p.registerInfix(token.Slash, p.parseInfixExpressions)
+	p.registerInfix(token.Star, p.parseInfixExpressions)
+	p.registerInfix(token.Eq, p.parseInfixExpressions)
+	p.registerInfix(token.NotEq, p.parseInfixExpressions)
+	p.registerInfix(token.Lt, p.parseInfixExpressions)
+	p.registerInfix(token.LtEq, p.parseInfixExpressions)
+	p.registerInfix(token.Gt, p.parseInfixExpressions)
+	p.registerInfix(token.GtEq, p.parseInfixExpressions)
 
 	// Read twice to set the current and peek tokens
 	p.nextToken()
@@ -174,7 +199,32 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
+	for !p.peekTokenIs(token.Semicolon) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+
+		p.nextToken()
+
+		leftExp = infix(leftExp)
+	}
+
 	return leftExp
+}
+
+func (p *Parser) parseInfixExpressions(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+
+	prec := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(prec)
+
+	return expression
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
@@ -205,4 +255,20 @@ func (p *Parser) parseNumberLiteral() ast.Expression {
 
 	lit.Value = value
 	return lit
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+
+	return Lowest
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curToken.Type]; ok {
+		return p
+	}
+
+	return Lowest
 }

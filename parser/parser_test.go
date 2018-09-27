@@ -225,6 +225,58 @@ func TestParsingPrefixExpressions(t *testing.T) {
 	}
 }
 
+func TestParsingInfixExpressions(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		leftValue  float64
+		operator   string
+		rightValue float64
+	}{
+		{"plus", "5 + 10;", 5.0, "+", 10.0},
+		{"minus", "10.5 - 5.5;", 10.5, "-", 5.5},
+		{"times", "5.0 * 10;", 5.0, "*", 10.0},
+		{"divide", "10 / 5.0;", 10.0, "/", 5.0},
+		{"greater than", "10 > 5;", 10.0, ">", 5.0},
+		{"less than", "5 < 10;", 5.0, "<", 10.0},
+		{"greater equal", "10 >= 5;", 10.0, ">=", 5.0},
+		{"less equal", "5 <= 10;", 5.0, "<=", 10.0},
+		{"equality", "5 == 5;", 5.0, "==", 5.0},
+		{"not equal", "10 != 5;", 10.0, "!=", 5.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("program statements incorrect length. expected=%d, got=%d", 1, len(program.Statements))
+			}
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			if !ok {
+				t.Fatalf("program statement is wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+			}
+
+			exp, ok := stmt.Expression.(*ast.InfixExpression)
+			if !ok {
+				t.Fatalf("statement expression wrong type. expected=*ast.InfixExpression, got=%T", stmt.Expression)
+			}
+
+			testNumberLiteral(t, exp.Left, tt.leftValue)
+
+			if exp.Operator != tt.operator {
+				t.Errorf("expression operator incorrect. expected=%q, got=%q", tt.operator, exp.Operator)
+			}
+
+			testNumberLiteral(t, exp.Right, tt.rightValue)
+		})
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
