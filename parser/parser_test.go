@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/butlermatt/monkey/ast"
 	"github.com/butlermatt/monkey/lexer"
 	"testing"
@@ -122,6 +123,37 @@ return 993322;
 	}
 }
 
+func TestBoolaenExpressions(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		expect bool
+	}{
+		{"true", "true;", true},
+		{"false", "false;", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("program has incorrect number of statements. expected=%d, got=%d", 1, len(program.Statements))
+			}
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			if !ok {
+				t.Fatalf("program.Statement[0] wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+			}
+
+			testBoolean(t, stmt.Expression, tt.expect)
+		})
+	}
+}
+
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 
@@ -189,10 +221,12 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		name     string
 		input    string
 		operator string
-		value    float64
+		value    interface{}
 	}{
 		{"bang", "!5;", "!", 5.0},
 		{"minus", "-15.3;", "-", 15.3},
+		{"not true", "!true", "!", true},
+		{"not false", "!false", "!", false},
 	}
 
 	for _, tt := range tests {
@@ -220,7 +254,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 				t.Fatalf("operator is wrong value. expected=%q, got=%q", tt.operator, exp.Operator)
 			}
 
-			testNumberLiteral(t, exp.Right, tt.value)
+			testLiteralExpression(t, exp.Right, tt.value)
 		})
 	}
 }
@@ -229,9 +263,9 @@ func TestParsingInfixExpressions(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
-		leftValue  float64
+		leftValue  interface{}
 		operator   string
-		rightValue float64
+		rightValue interface{}
 	}{
 		{"plus", "5 + 10;", 5.0, "+", 10.0},
 		{"minus", "10.5 - 5.5;", 10.5, "-", 5.5},
@@ -243,6 +277,9 @@ func TestParsingInfixExpressions(t *testing.T) {
 		{"less equal", "5 <= 10;", 5.0, "<=", 10.0},
 		{"equality", "5 == 5;", 5.0, "==", 5.0},
 		{"not equal", "10 != 5;", 10.0, "!=", 5.0},
+		{"true", "true == true;", true, "==", true},
+		{"not true", "true != false", true, "!=", false},
+		{"false", "false == false;", false, "==", false},
 	}
 
 	for _, tt := range tests {
@@ -283,6 +320,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
 		{"4 <= 5 != 4 >= 5", "((4 <= 5) != (4 >= 5))"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"true", "true"},
+		{"false", "false"},
+		{"3 > 5 == false", "((3 > 5) == false)"},
+		{"3 <= 5 == true", "((3 <= 5) == true)"},
 	}
 
 	for i, tt := range tests {
@@ -348,12 +389,34 @@ func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
 	return true
 }
 
+func testBoolean(t *testing.T, exp ast.Expression, value bool) bool {
+	b, ok := exp.(*ast.Boolean)
+	if !ok {
+		t.Errorf("expression wrong type. expected=*ast.Boolean, got=%T", exp)
+		return false
+	}
+
+	if b.Value != value {
+		t.Errorf("boolean value incorrect. expected=%t, got=%t", value, b.Value)
+		return false
+	}
+
+	if b.TokenLiteral() != fmt.Sprintf("%t", value) {
+		t.Errorf("boolean tokenLiteral incorrect. expected=%t, got=%q", value, b.TokenLiteral())
+		return false
+	}
+
+	return true
+}
+
 func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{}) bool {
 	switch v := expected.(type) {
 	case float64:
 		return testNumberLiteral(t, exp, v)
 	case string:
 		return testIdentifier(t, exp, v)
+	case bool:
+		return testBoolean(t, exp, v)
 	}
 
 	t.Errorf("type of exp not handled by test. %T", exp)

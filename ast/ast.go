@@ -152,3 +152,12 @@ type NumberLiteral struct {
 func (nl *NumberLiteral) expressionNode()      {}
 func (nl *NumberLiteral) TokenLiteral() string { return nl.Token.Literal }
 func (nl *NumberLiteral) String() string       { return nl.Token.Literal }
+
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }
