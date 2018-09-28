@@ -261,18 +261,7 @@ func TestParsingInfixExpressions(t *testing.T) {
 				t.Fatalf("program statement is wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
 			}
 
-			exp, ok := stmt.Expression.(*ast.InfixExpression)
-			if !ok {
-				t.Fatalf("statement expression wrong type. expected=*ast.InfixExpression, got=%T", stmt.Expression)
-			}
-
-			testNumberLiteral(t, exp.Left, tt.leftValue)
-
-			if exp.Operator != tt.operator {
-				t.Errorf("expression operator incorrect. expected=%q, got=%q", tt.operator, exp.Operator)
-			}
-
-			testNumberLiteral(t, exp.Right, tt.rightValue)
+			testInfixExpression(t, stmt.Expression, tt.leftValue, tt.operator, tt.rightValue)
 		})
 	}
 }
@@ -337,4 +326,55 @@ func testNumberLiteral(t *testing.T, nl ast.Expression, value float64) bool {
 
 	// TODO: test string literal?
 	return true
+}
+
+func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
+	ident, ok := exp.(*ast.Identifier)
+	if !ok {
+		t.Errorf("expression wrong type. expected=*ast.Identifier, got=%T", exp)
+		return false
+	}
+
+	if ident.Value != value {
+		t.Errorf("ident value incorrect. expected=%q, got=%q", value, ident.Value)
+		return false
+	}
+
+	if ident.TokenLiteral() != value {
+		t.Errorf("ident TokenLiteral incorrect. expected=%q, got=%q", value, ident.TokenLiteral())
+		return false
+	}
+
+	return true
+}
+
+func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{}) bool {
+	switch v := expected.(type) {
+	case float64:
+		return testNumberLiteral(t, exp, v)
+	case string:
+		return testIdentifier(t, exp, v)
+	}
+
+	t.Errorf("type of exp not handled by test. %T", exp)
+	return false
+}
+
+func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, oper string, right interface{}) bool {
+	ieExp, ok := exp.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("expression incorrect type. expected=*ast.InfixExpression, got=%T", exp)
+		return false
+	}
+
+	if !testLiteralExpression(t, ieExp.Left, left) {
+		return false
+	}
+
+	if ieExp.Operator != oper {
+		t.Errorf("expression operator incorrect. expected=%q, got=%q", oper, ieExp.Operator)
+		return false
+	}
+
+	return testLiteralExpression(t, ieExp.Right, right)
 }
