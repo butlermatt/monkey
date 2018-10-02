@@ -441,6 +441,86 @@ func TestIfElseExpression(t *testing.T) {
 	}
 }
 
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x, y) { x + y; }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program statements wrong length. expected=%d, got=%d", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("statement is wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("statement expression wrong type. expected=*ast.FunctionLiteral, got=%T", stmt.Expression)
+	}
+
+	if len(function.Parameters) != 2 {
+		t.Fatalf("function parameters wrong length. expected=%d, got=%d", 2, len(function.Parameters))
+	}
+
+	testLiteralExpression(t, function.Parameters[0], "x")
+	testLiteralExpression(t, function.Parameters[1], "y")
+
+	if len(function.Body.Statements) != 1 {
+		t.Fatalf("function body statements wrong length. expected=%d, got=%d", 1, len(function.Body.Statements))
+	}
+
+	bodyStatement, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("function body statement wrong type. expected=*ast.ExpressionStatement, got=%T", function.Body.Statements[0])
+	}
+
+	testInfixExpression(t, bodyStatement.Expression, "x", "+", "y")
+}
+
+func TestFunctionParameterParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{name: "empty", input: "fn() {};", expected: []string{}},
+		{name: "single", input: "fn(x) {};", expected: []string{"x"}},
+		{name: "multiple", input: "fn(x, y, z) {};", expected: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			if !ok {
+				t.Fatalf("statement is wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+			}
+
+			function, ok := stmt.Expression.(*ast.FunctionLiteral)
+			if !ok {
+				t.Fatalf("statement expression wrong type. expected=*ast.FunctionLiteral, got=%T", stmt.Expression)
+			}
+
+			if len(function.Parameters) != len(tt.expected) {
+				t.Fatalf("function parameters wrong length. expected=%d, got=%d", len(tt.expected), len(function.Parameters))
+			}
+
+			for i, ident := range tt.expected {
+				testLiteralExpression(t, function.Parameters[i], ident)
+			}
+		})
+	}
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
