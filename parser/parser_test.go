@@ -36,40 +36,36 @@ func TestParser_Errors(t *testing.T) {
 }
 
 func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 10.0;
-let foobar = 238232;
-`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParseErrors(t, p)
-
-	if program == nil {
-		t.Fatal("ParseProgram returned nil")
-	}
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("Program statements incorrect length. expected=%d, got=%d\n", 3, len(program.Statements))
-	}
-
 	tests := []struct {
-		expectedIdent string
+		name  string
+		input string
+		ident string
+		value interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"five", "let x = 5;", "x", 5.0},
+		{"true", "let y = true;", "y", true},
+		{"ident", "let foobar = y;", "foobar", "y"},
 	}
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		t.Run(tt.expectedIdent, func(t *testing.T) {
-			testLetStatement(t, stmt, tt.expectedIdent)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("Program statements incorrect length. expected=%d, got=%d\n", 1, len(program.Statements))
+			}
+
+			stmt := program.Statements[0]
+			testLetStatement(t, stmt, tt.ident)
+
+			val := stmt.(*ast.LetStatement).Value
+			testLiteralExpression(t, val, tt.value)
 		})
 	}
+
 }
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
@@ -94,32 +90,39 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 }
 
 func TestReturnStatements(t *testing.T) {
-	input := `return 5;
-return 10.0;
-return 993322;
-`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParseErrors(t, p)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements wrong length. expected=3, got=%d", len(program.Statements))
+	tests := []struct {
+		name     string
+		input    string
+		expected interface{}
+	}{
+		{"five", "return 5;", 5.0},
+		{"true", "return true;", true},
+		{"ident", "return foobar;", "foobar"},
 	}
 
-	// TODO: Make this better when I start evaluating expressions.
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("stmt wrong type. expected=*ast.ReturnStatement, got=%T", stmt)
-			continue
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.New(tt.input)
+			p := New(l)
 
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("return statement TokenLiteral is wrong. expected=%q, got=%q", "return", returnStmt.TokenLiteral())
-		}
+			program := p.ParseProgram()
+			checkParseErrors(t, p)
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("program.Statements wrong length. expected=%d, got=%d", 1, len(program.Statements))
+			}
+
+			returnStmt, ok := program.Statements[0].(*ast.ReturnStatement)
+			if !ok {
+				t.Fatalf("stmt wrong type. expected=*ast.ReturnStatement, got=%T", program.Statements[0])
+			}
+
+			if returnStmt.TokenLiteral() != "return" {
+				t.Errorf("return statement TokenLiteral is wrong. expected=%q, got=%q", "return", returnStmt.TokenLiteral())
+			}
+
+			testLiteralExpression(t, returnStmt.ReturnValue, tt.expected)
+		})
 	}
 }
 
