@@ -41,6 +41,28 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}
 }
 
+func TestBangOperator(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"not true", "!true;", false},
+		{"not false", "!false;", true},
+		{"not five", "!5;", false},
+		{"not not true", "!!true;", true},
+		{"not not false", "!!false;", false},
+		{"not not zero", "!!0;", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eval := testEval(tt.input)
+			testBooleanObject(t, eval, tt.expected)
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
