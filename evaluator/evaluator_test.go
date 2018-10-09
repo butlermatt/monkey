@@ -96,6 +96,34 @@ func TestBangOperator(t *testing.T) {
 	}
 }
 
+func TestIfElseExpressions(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected interface{}
+	}{
+		{"if true", "if (true) { 10 }", 10.0},
+		{"if false", "if (false) { 10 }", nil},
+		{"if one", "if (1) { 10 }", 10.0},
+		{"if 1 lte 2", "if (1 <= 2) { 10 }", 10.0},
+		{"if 1 gt 2", "if (1 > 2) { 10 }", nil},
+		{"if else 1 gt 2", "if (1 > 2) { 10 } else { 20 }", 20.0},
+		{"if else 1 lte 2", "if (1 <= 2) { 10 } else { 20 }", 10.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaled := testEval(tt.input)
+			num, ok := tt.expected.(float64)
+			if ok {
+				testNumberObject(t, evaled, num)
+			} else {
+				testNullObject(t, evaled)
+			}
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -107,7 +135,7 @@ func testEval(input string) object.Object {
 func testNumberObject(t *testing.T, obj object.Object, expected float64) bool {
 	result, ok := obj.(*object.Number)
 	if !ok {
-		t.Errorf("object wrong type. expected=*object.Number, got=%T (%+v)", obj, obj)
+		t.Errorf("object wrong type. expected=*object.Number, got=%T (%+[1]v)", obj)
 		return false
 	}
 
@@ -128,6 +156,15 @@ func testBooleanObject(t *testing.T, obj object.Object, expected bool) bool {
 
 	if result.Value != expected {
 		t.Errorf("object has wrong value. expected=%t, got=%t", expected, result.Value)
+		return false
+	}
+
+	return true
+}
+
+func testNullObject(t *testing.T, obj object.Object) bool {
+	if obj != Null {
+		t.Errorf("object wrong type. expected=*Null, got=%T (%+[1]v)", obj)
 		return false
 	}
 
