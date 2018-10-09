@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"github.com/butlermatt/monkey/ast"
 	"github.com/butlermatt/monkey/object"
 )
@@ -14,7 +15,7 @@ var (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalStatements(node)
+		return evalProgram(node)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.NumberLiteral:
@@ -23,11 +24,11 @@ func Eval(node ast.Node) object.Object {
 		return nativeBoolToBoolean(node.Value)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpression(node.Token.Line, node.Operator, right)
 	case *ast.InfixExpression:
 		left := Eval(node.Left)
 		right := Eval(node.Right)
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpression(node.Token.Line, node.Operator, left, right)
 	case *ast.BlockStatement:
 		return evalBlockStatement(node)
 	case *ast.IfExpression:
@@ -40,28 +41,31 @@ func Eval(node ast.Node) object.Object {
 	return nil
 }
 
-func evalStatements(program *ast.Program) object.Object {
+func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
 	for _, statement := range program.Statements {
 		result = Eval(statement)
 
-		if result.Type() == object.ReturnObj {
+		switch result.Type() {
+		case object.ReturnObj:
 			return result.(*object.ReturnValue).Value
+		case object.ErrorObj:
+			return result
 		}
 	}
 
 	return result
 }
 
-func evalPrefixExpression(operator string, right object.Object) object.Object {
+func evalPrefixExpression(line int, operator string, right object.Object) object.Object {
 	switch operator {
 	case "!":
 		return evalBangOperatorExpression(right)
 	case "-":
-		return evalMinusPrefixOperatorExpression(right)
+		return evalMinusPrefixOperatorExpression(line, right)
 	}
-	return Null
+	return newError("on line %d - unknown operator: %s%s", line, operator, right.Type())
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
@@ -77,29 +81,31 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	return False
 }
 
-func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
+func evalMinusPrefixOperatorExpression(line int, right object.Object) object.Object {
 	if right.Type() != object.NumberObj {
-		return Null
+		return newError("on line %d - unknown operator: -%s", line, right.Type())
 	}
 
 	value := right.(*object.Number).Value
 	return &object.Number{Value: -value}
 }
 
-func evalInfixExpression(operator string, left, right object.Object) object.Object {
+func evalInfixExpression(line int, operator string, left, right object.Object) object.Object {
 	switch {
 	case left.Type() == object.NumberObj && right.Type() == object.NumberObj:
-		return evalNumberInfixExpression(operator, left, right)
+		return evalNumberInfixExpression(line, operator, left, right)
+	case left.Type() != right.Type():
+		return newError("on line %d - type mismatch: %s %s %s", line, left.Type(), operator, right.Type())
 	case operator == "==":
 		return nativeBoolToBoolean(left == right)
 	case operator == "!=":
 		return nativeBoolToBoolean(left != right)
 	}
 
-	return Null
+	return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
 }
 
-func evalNumberInfixExpression(operator string, left, right object.Object) object.Object {
+func evalNumberInfixExpression(line int, operator string, left, right object.Object) object.Object {
 	leftVal := left.(*object.Number).Value
 	rightVal := right.(*object.Number).Value
 
@@ -126,7 +132,7 @@ func evalNumberInfixExpression(operator string, left, right object.Object) objec
 		return nativeBoolToBoolean(leftVal >= rightVal)
 	}
 
-	return Null
+	return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
 }
 
 func evalIfExpression(ie *ast.IfExpression) object.Object {
@@ -147,7 +153,7 @@ func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	for _, statement := range block.Statements {
 		res = Eval(statement)
 
-		if res != nil && res.Type() == object.ReturnObj {
+		if res != nil && res.Type() == object.ReturnObj || res.Type() == object.ErrorObj {
 			return res
 		}
 	}
@@ -172,4 +178,8 @@ func isTruthy(obj object.Object) bool {
 	default:
 		return true // True or any value.
 	}
+}
+
+func newError(format string, a ...interface{}) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
