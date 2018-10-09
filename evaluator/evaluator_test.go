@@ -124,6 +124,27 @@ func TestIfElseExpressions(t *testing.T) {
 	}
 }
 
+func TestReturnStatements(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected float64
+	}{
+		{"return ten", "return 10;", 10.0},
+		{"return ten ignore", "return 10; 9;", 10.0},
+		{"return expression", "return 2 * 5; 9;", 10.0},
+		{"return expression ignore", "9; return 2 * 5; 9;", 10.0},
+		{"nested return", "if (10 > 1) { if (10 > 1) { return 10; } return 1; }", 10.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			testNumberObject(t, evaluated, tt.expected)
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)

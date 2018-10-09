@@ -8,6 +8,7 @@ const (
 	NumberObj  ObjectType = "NUMBER"
 	BooleanObj ObjectType = "BOOLEAN"
 	NullObj    ObjectType = "NULL"
+	ReturnObj  ObjectType = "RETURN_VALUE"
 )
 
 type Object interface {
@@ -33,3 +34,10 @@ type Null struct{}
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return NullObj }
+
+type ReturnValue struct {
+	Value Object
+}
+
+func (rv *ReturnValue) Type() ObjectType { return ReturnObj }
+func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
