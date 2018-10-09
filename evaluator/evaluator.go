@@ -76,8 +76,13 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 }
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
-	if left.Type() == object.NumberObj && right.Type() == object.NumberObj {
+	switch {
+	case left.Type() == object.NumberObj && right.Type() == object.NumberObj:
 		return evalNumberInfixExpression(operator, left, right)
+	case operator == "==":
+		return nativeBoolToBoolean(left == right)
+	case operator == "!=":
+		return nativeBoolToBoolean(left != right)
 	}
 
 	return Null
