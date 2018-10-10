@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/butlermatt/monkey/evaluator"
 	"github.com/butlermatt/monkey/lexer"
+	"github.com/butlermatt/monkey/object"
 	"github.com/butlermatt/monkey/parser"
 	"io"
 )
@@ -13,6 +14,7 @@ const Prompt = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(Prompt)
@@ -29,7 +31,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program)
+		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
 			_, _ = io.WriteString(out, evaluated.Inspect())
 			_, _ = io.WriteString(out, "\n")

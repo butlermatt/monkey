@@ -167,6 +167,7 @@ if (10 > 1) {
 }`,
 			"on line 4 - unknown operator: BOOLEAN + BOOLEAN",
 		},
+		{"unbound variable", "foobar;", "on line 1 - identifier not found: foobar"},
 	}
 
 	for _, tt := range tests {
@@ -184,12 +185,32 @@ if (10 > 1) {
 	}
 }
 
+func TestLetStatements(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected float64
+	}{
+		{"simple assignment", "let a = 5; a;", 5.0},
+		{"expression assignment", "let a = 5 * 5; a;", 25.0},
+		{"evaluated assignment", "let a = 5; let b = a; b;", 5.0},
+		{"complex assignment", "let a = 5; let b = a; let c = a + b + 5; c;", 15.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testNumberObject(t, testEval(tt.input), tt.expected)
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
+	env := object.NewEnvironment()
 
-	return Eval(program)
+	return Eval(program, env)
 }
 
 func testNumberObject(t *testing.T, obj object.Object, expected float64) bool {
