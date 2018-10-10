@@ -204,6 +204,50 @@ func TestLetStatements(t *testing.T) {
 	}
 }
 
+func TestFunctionObjects(t *testing.T) {
+	input := "fn(x) { x + 2; };"
+
+	evaluated := testEval(input)
+	fn, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Fatalf("object wrong type. expected=*object.Function, got=%T (%+[1]v)", evaluated)
+	}
+
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("function has wrong number of parameters. expected=%d, got=%d", 1, len(fn.Parameters))
+	}
+
+	if fn.Parameters[0].String() != "x" {
+		t.Fatalf("function parameter incorrect. expected=%q, got=%q", "x", fn.Parameters[0].String())
+	}
+
+	body := "(x + 2)"
+	if fn.Body.String() != body {
+		t.Fatalf("function body incorrect. expected=%q, got=%q", body, fn.Body.String())
+	}
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected float64
+	}{
+		{"explicit return", "let ident = fn(x) { return x; }; ident(5);", 5.0},
+		{"implicit return", "let ident = fn(x) { x; }; ident(5);", 5.0},
+		{"double", "let double = fn(x) { x * 2; }; double(5);", 10.0},
+		{"add", "let add = fn(x, y) { x + y; }; add(5, 5);", 10.0},
+		{"recursive add", "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20.0},
+		{"anonymous", "fn(x) { x; }(5);", 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testNumberObject(t, testEval(tt.input), tt.expected)
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
