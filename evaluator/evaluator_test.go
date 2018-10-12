@@ -260,6 +260,20 @@ addTwo(2);`
 	testNumberObject(t, testEval(input), 4)
 }
 
+func TestStringLiteral(t *testing.T) {
+	input := `"Hello world!"`
+
+	evaled := testEval(input)
+	str, ok := evaled.(*object.String)
+	if !ok {
+		t.Fatalf("object is wrong type. expected=*object.String, got=%T (%+[1]v)", evaled)
+	}
+
+	if str.Value != "Hello world!" {
+		t.Errorf("string value is incorrect. expected=%q, got=%q", "Hello World!", str.Value)
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)

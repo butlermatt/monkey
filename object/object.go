@@ -13,6 +13,7 @@ const (
 	NumberObj   ObjectType = "NUMBER"
 	BooleanObj  ObjectType = "BOOLEAN"
 	NullObj     ObjectType = "NULL"
+	StringObj   ObjectType = "STRING"
 	FunctionObj ObjectType = "FUNCTION"
 	ReturnObj   ObjectType = "RETURN_VALUE"
 	ErrorObj    ObjectType = "ERROR"
@@ -41,6 +42,13 @@ type Null struct{}
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return NullObj }
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType { return StringObj }
+func (s *String) Inspect() string  { return s.Value }
 
 type ReturnValue struct {
 	Value Object
