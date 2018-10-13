@@ -215,12 +215,15 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 }
 
 func evalIdentifier(ident *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(ident.Value)
-	if !ok {
-		return newError("on line %d - identifier not found: %s", ident.Token.Line, ident.Value)
+	if val, ok := env.Get(ident.Value); ok {
+		return val
 	}
 
-	return val
+	if builtin, ok := builtins[ident.Value]; ok {
+		return builtin
+	}
+
+	return newError("on line %d - identifier not found: %s", ident.Token.Line, ident.Value)
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -238,14 +241,16 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 }
 
 func applyFunction(line int, fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
-		return newError("on line %d - not a function: %s", line, fn.Type())
+	switch fn := fn.(type) {
+	case *object.Function:
+		extEnv := extendFunctionEnv(fn, args)
+		evaluated := Eval(fn.Body, extEnv)
+		return unwrapReturnValue(evaluated)
+	case *object.Builtin:
+		return fn.Fn(line, args...)
 	}
 
-	extEnv := extendFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extEnv)
-	return unwrapReturnValue(evaluated)
+	return newError("on line %d - not a function: %s", line, fn.Type())
 }
 
 func nativeBoolToBoolean(input bool) *object.Boolean {
