@@ -168,6 +168,7 @@ if (10 > 1) {
 			"on line 4 - unknown operator: BOOLEAN + BOOLEAN",
 		},
 		{"unbound variable", "foobar;", "on line 1 - identifier not found: foobar"},
+		{"minus string", `"Hello" - "World";`, "on line 1 - unknown operator: STRING - STRING"},
 	}
 
 	for _, tt := range tests {
@@ -271,6 +272,20 @@ func TestStringLiteral(t *testing.T) {
 
 	if str.Value != "Hello world!" {
 		t.Errorf("string value is incorrect. expected=%q, got=%q", "Hello World!", str.Value)
+	}
+}
+
+func TestStringConcatenation(t *testing.T) {
+	input := `"Hello" + " " + "World!";`
+	evaluated := testEval(input)
+
+	str, ok := evaluated.(*object.String)
+	if !ok {
+		t.Fatalf("object is wrong type. expected=*object.String, got=%T (%+[1]v", evaluated)
+	}
+
+	if str.Value != "Hello World!" {
+		t.Errorf("string value incorrect. expected=%q, got=%q", "Hello World!", str.Value)
 	}
 }
 

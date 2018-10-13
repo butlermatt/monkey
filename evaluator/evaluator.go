@@ -129,10 +129,12 @@ func evalMinusPrefixOperatorExpression(line int, right object.Object) object.Obj
 
 func evalInfixExpression(line int, operator string, left, right object.Object) object.Object {
 	switch {
-	case left.Type() == object.NumberObj && right.Type() == object.NumberObj:
-		return evalNumberInfixExpression(line, operator, left, right)
 	case left.Type() != right.Type():
 		return newError("on line %d - type mismatch: %s %s %s", line, left.Type(), operator, right.Type())
+	case left.Type() == object.NumberObj:
+		return evalNumberInfixExpression(line, operator, left, right)
+	case left.Type() == object.StringObj:
+		return evalStringInfixExpression(line, operator, left, right)
 	case operator == "==":
 		return nativeBoolToBoolean(left == right)
 	case operator == "!=":
@@ -170,6 +172,16 @@ func evalNumberInfixExpression(line int, operator string, left, right object.Obj
 	}
 
 	return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
+}
+
+func evalStringInfixExpression(line int, operator string, left, right object.Object) object.Object {
+	if operator != "+" {
+		return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
+	}
+
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	return &object.String{Value: leftVal + rightVal}
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
