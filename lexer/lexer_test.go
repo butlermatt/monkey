@@ -29,6 +29,7 @@ if (5 < 10.0) {
 9 <= 10.0 >= 5;
 "foobar";
 "foo bar";
+[1, 2];
 `
 
 	tests := []struct {
@@ -140,12 +141,21 @@ if (5 < 10.0) {
 		{token.GtEq, ">=", 21},
 		{token.Num, "5", 21},
 		{token.Semicolon, ";", 21},
+
 		{token.String, "foobar", 22},
 		{token.Semicolon, ";", 22},
+
 		{token.String, "foo bar", 23},
 		{token.Semicolon, ";", 23},
 
-		{token.EOF, "", 24},
+		{token.LBracket, "[", 24},
+		{token.Num, "1", 24},
+		{token.Comma, ",", 24},
+		{token.Num, "2", 24},
+		{token.RBracket, "]", 24},
+		{token.Semicolon, ";", 24},
+
+		{token.EOF, "", 25},
 	}
 
 	l := New(input)

@@ -73,6 +73,23 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return applyFunction(node.Token.Line, function, args)
+	case *ast.ArrayLiteral:
+		els := evalExpressions(node.Elements, env)
+		if len(els) == 1 && isError(els[0]) {
+			return els[0]
+		}
+		return &object.Array{Elements: els}
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		index := Eval(node.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(node.Token.Line, left, index)
 	}
 
 	return Null
@@ -238,6 +255,26 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	}
 
 	return result
+}
+
+func evalIndexExpression(line int, left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ArrayObj && index.Type() == object.NumberObj:
+		return evalArrayIndexExpression(left, index)
+	}
+
+	return newError("on line %d - index operator not support: %s[%s]", line, left.Type(), index.Type())
+}
+
+func evalArrayIndexExpression(left, index object.Object) object.Object {
+	arr := left.(*object.Array)
+	ind := int(index.(*object.Number).Value)
+
+	if ind < 0 || ind >= len(arr.Elements) {
+		return Null
+	}
+
+	return arr.Elements[ind]
 }
 
 func applyFunction(line int, fn object.Object, args []object.Object) object.Object {

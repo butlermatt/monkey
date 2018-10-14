@@ -16,6 +16,7 @@ const (
 	BooleanObj  ObjectType = "BOOLEAN"
 	NullObj     ObjectType = "NULL"
 	StringObj   ObjectType = "STRING"
+	ArrayObj    ObjectType = "ARRAY"
 	FunctionObj ObjectType = "FUNCTION"
 	ReturnObj   ObjectType = "RETURN_VALUE"
 	ErrorObj    ObjectType = "ERROR"
@@ -52,6 +53,26 @@ type String struct {
 
 func (s *String) Type() ObjectType { return StringObj }
 func (s *String) Inspect() string  { return s.Value }
+
+type Array struct {
+	Elements []Object
+}
+
+func (ao *Array) Type() ObjectType { return ArrayObj }
+func (ao *Array) Inspect() string {
+	var out bytes.Buffer
+
+	var els []string
+	for _, e := range ao.Elements {
+		els = append(els, e.Inspect())
+	}
+
+	out.WriteByte('[')
+	out.WriteString(strings.Join(els, ", "))
+	out.WriteByte(']')
+
+	return out.String()
+}
 
 type ReturnValue struct {
 	Value Object

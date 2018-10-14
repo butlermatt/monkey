@@ -333,6 +333,8 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
 		{"!!true", "(!(!true))"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	}
 
 	for i, tt := range tests {
@@ -585,6 +587,58 @@ func TestStringLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestParsingArrayLiterals(t *testing.T) {
+	input := `[1, 2 * 2, 3 + 3];`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("statement is wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("statement expression wrong type. expected=*ast.ArrayLiteral, got=%T", stmt.Expression)
+	}
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("array contains wrong number of elements. expected=%d, got=%d", 3, len(array.Elements))
+	}
+
+	testNumberLiteral(t, array.Elements[0], 1.0)
+	testInfixExpression(t, array.Elements[1], 2.0, "*", 2.0)
+	testInfixExpression(t, array.Elements[2], 3.0, "+", 3.0)
+}
+
+func TestParsingIndexExpressions(t *testing.T) {
+	input := "myArray[1 + 2];"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program statements wrong length. expected=%d, got=%d", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("first program statement wrong type. expected=*ast.ExpressionStatement, got=%T", program.Statements[0])
+	}
+
+	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("statement expression wrong type. expected=*ast.IndexExpression, got=%T", stmt.Expression)
+	}
+
+	testIdentifier(t, indexExp.Left, "myArray")
+	testInfixExpression(t, indexExp.Index, 1.0, "+", 2.0)
+}
+
 func checkParseErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
@@ -665,7 +719,7 @@ func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{
 		return testBoolean(t, exp, v)
 	}
 
-	t.Errorf("type of exp not handled by test. %T", exp)
+	t.Errorf("type of exp not handled by test. %T", expected)
 	return false
 }
 

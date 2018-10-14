@@ -324,6 +324,55 @@ func TestBuiltinFunctions(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3];"
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Array)
+	if !ok {
+		t.Fatalf("object is wrong type. expected=*object.Array, got=%T (%+[1]v)", evaluated)
+	}
+
+	if len(result.Elements) != 3 {
+		t.Fatalf("array has wrong number of elements. expected=%d, got=%d", 3, len(result.Elements))
+	}
+
+	testNumberObject(t, result.Elements[0], 1)
+	testNumberObject(t, result.Elements[1], 4)
+	testNumberObject(t, result.Elements[2], 6)
+}
+
+func TestArrayIndexExpression(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected interface{}
+	}{
+		{"zero index", "[1, 2, 3][0]", 1.0},
+		{"one index", "[1, 2, 3][1]", 2.0},
+		{"two index", "[1, 2, 3][2]", 3.0},
+		{"identifier index", "let i = 0; [1, 2][i]", 1.0},
+		{"expression index", "[1, 2, 3][1 + 1]", 3.0},
+		{"identifier array", "let myArray = [1, 2, 3]; myArray[2];", 3.0},
+		{"identifier expressions", "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6.0},
+		{"nesting identifiers", "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", 2.0},
+		{"out of bounds", "[1, 2, 3][3]", nil},
+		{"negative", "[1, 2, 3][-1]", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			value, ok := tt.expected.(float64)
+			if !ok {
+				testNullObject(t, evaluated)
+			} else {
+				testNumberObject(t, evaluated, value)
+			}
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
