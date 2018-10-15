@@ -30,6 +30,7 @@ if (5 < 10.0) {
 "foobar";
 "foo bar";
 [1, 2];
+{"foo": "bar"};
 `
 
 	tests := []struct {
@@ -155,7 +156,14 @@ if (5 < 10.0) {
 		{token.RBracket, "]", 24},
 		{token.Semicolon, ";", 24},
 
-		{token.EOF, "", 25},
+		{token.LBrace, "{", 25},
+		{token.String, "foo", 25},
+		{token.Colon, ":", 25},
+		{token.String, "bar", 25},
+		{token.RBrace, "}", 25},
+		{token.Semicolon, ";", 25},
+
+		{token.EOF, "", 26},
 	}
 
 	l := New(input)
