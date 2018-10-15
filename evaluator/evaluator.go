@@ -119,7 +119,7 @@ func evalPrefixExpression(line int, operator string, right object.Object) object
 	case "-":
 		return evalMinusPrefixOperatorExpression(line, right)
 	}
-	return newError("on line %d - unknown operator: %s%s", line, operator, right.Type())
+	return newError(line, "unknown operator: %s%s", operator, right.Type())
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
@@ -137,7 +137,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 
 func evalMinusPrefixOperatorExpression(line int, right object.Object) object.Object {
 	if right.Type() != object.NumberObj {
-		return newError("on line %d - unknown operator: -%s", line, right.Type())
+		return newError(line, "unknown operator: -%s", right.Type())
 	}
 
 	value := right.(*object.Number).Value
@@ -147,7 +147,7 @@ func evalMinusPrefixOperatorExpression(line int, right object.Object) object.Obj
 func evalInfixExpression(line int, operator string, left, right object.Object) object.Object {
 	switch {
 	case left.Type() != right.Type():
-		return newError("on line %d - type mismatch: %s %s %s", line, left.Type(), operator, right.Type())
+		return newError(line, "type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	case left.Type() == object.NumberObj:
 		return evalNumberInfixExpression(line, operator, left, right)
 	case left.Type() == object.StringObj:
@@ -158,7 +158,7 @@ func evalInfixExpression(line int, operator string, left, right object.Object) o
 		return nativeBoolToBoolean(left != right)
 	}
 
-	return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
+	return newError(line, "unknown operator: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalNumberInfixExpression(line int, operator string, left, right object.Object) object.Object {
@@ -188,12 +188,12 @@ func evalNumberInfixExpression(line int, operator string, left, right object.Obj
 		return nativeBoolToBoolean(leftVal >= rightVal)
 	}
 
-	return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
+	return newError(line, "unknown operator: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalStringInfixExpression(line int, operator string, left, right object.Object) object.Object {
 	if operator != "+" {
-		return newError("on line %d - unknown operator: %s %s %s", line, left.Type(), operator, right.Type())
+		return newError(line, "unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 
 	leftVal := left.(*object.String).Value
@@ -240,7 +240,7 @@ func evalIdentifier(ident *ast.Identifier, env *object.Environment) object.Objec
 		return builtin
 	}
 
-	return newError("on line %d - identifier not found: %s", ident.Token.Line, ident.Value)
+	return newError(ident.Token.Line, "identifier not found: %s", ident.Value)
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -263,7 +263,7 @@ func evalIndexExpression(line int, left, index object.Object) object.Object {
 		return evalArrayIndexExpression(left, index)
 	}
 
-	return newError("on line %d - index operator not support: %s[%s]", line, left.Type(), index.Type())
+	return newError(line, "index operator not support: %s[%s]", left.Type(), index.Type())
 }
 
 func evalArrayIndexExpression(left, index object.Object) object.Object {
@@ -287,7 +287,7 @@ func applyFunction(line int, fn object.Object, args []object.Object) object.Obje
 		return fn.Fn(line, args...)
 	}
 
-	return newError("on line %d - not a function: %s", line, fn.Type())
+	return newError(line, "not a function: %s", fn.Type())
 }
 
 func nativeBoolToBoolean(input bool) *object.Boolean {
@@ -335,6 +335,9 @@ func isError(obj object.Object) bool {
 	return false
 }
 
-func newError(format string, a ...interface{}) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
+func newError(line int, format string, a ...interface{}) *object.Error {
+	msg := "on line %d - " + format
+	args := []interface{}{line}
+	args = append(args, a...)
+	return &object.Error{Message: fmt.Sprintf(msg, args...)}
 }
