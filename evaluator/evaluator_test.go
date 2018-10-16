@@ -169,6 +169,7 @@ if (10 > 1) {
 		},
 		{"unbound variable", "foobar;", "on line 1 - identifier not found: foobar"},
 		{"minus string", `"Hello" - "World";`, "on line 1 - unknown operator: STRING - STRING"},
+		{"invalid hashkey", `{"name": "Monkey"}[fn(x){x}];`, "on line 1 - unusable as hash key: FUNCTION"},
 	}
 
 	for _, tt := range tests {
@@ -368,6 +369,76 @@ func TestArrayIndexExpression(t *testing.T) {
 				testNullObject(t, evaluated)
 			} else {
 				testNumberObject(t, evaluated, value)
+			}
+		})
+	}
+}
+
+func TestHashLiterals(t *testing.T) {
+	input := `let two = "two";
+{
+	"one": 10 - 9,
+	two: 1 + 1,
+    "thr" + "ee": 6 / 2,
+	4: 4,
+	true: 5,
+	false: 6
+};`
+
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+
+	if !ok {
+		t.Fatalf("eval return wrong object type. expected=*object.Hash, got=%T (%+[1]v)", evaluated)
+	}
+
+	expected := map[object.HashKey]float64{
+		(&object.String{Value: "one"}).HashKey():   1,
+		(&object.String{Value: "two"}).HashKey():   2,
+		(&object.String{Value: "three"}).HashKey(): 3,
+		(&object.Number{Value: 4}).HashKey():       4,
+		True.HashKey():                             5,
+		False.HashKey():                            6,
+	}
+
+	if len(result.Pairs) != len(expected) {
+		t.Fatalf("Hash has wrong number of pairs. expected=%d, got=%d", len(expected), len(result.Pairs))
+	}
+
+	for exKey, exVal := range expected {
+		pair, ok := result.Pairs[exKey]
+		if !ok {
+			t.Errorf("hash has no pair for the key %d", exKey)
+			continue
+		}
+
+		testNumberObject(t, pair.Value, exVal)
+	}
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected interface{}
+	}{
+		{"foo-5", `{"foo": 5}["foo"]`, 5.0},
+		{"foo-bar", `{"foo": 5}["bar"]`, nil},
+		{"ident-foo", `let key = "foo"; {"foo": 5}[key]`, 5.0},
+		{"empty-foo", `{}["foo"]`, nil},
+		{"5-5", `{5: 5}[5]`, 5.0},
+		{"true-5", `{true: 5}[true]`, 5.0},
+		{"false-5", `{false: 5}[false]`, 5.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			number, ok := tt.expected.(float64)
+			if !ok {
+				testNullObject(t, evaluated)
+			} else {
+				testNumberObject(t, evaluated, number)
 			}
 		})
 	}
