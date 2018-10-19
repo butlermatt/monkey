@@ -107,7 +107,7 @@ func testNumberObject(expected float64, actual object.Object) error {
 	}
 
 	if res.Value != expected {
-		return fmt.Errorf("object has wrong value. expected=%d, got=%d", expected, res.Value)
+		return fmt.Errorf("object has wrong value. expected=%f, got=%f", expected, res.Value)
 	}
 
 	return nil
