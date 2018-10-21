@@ -79,6 +79,31 @@ func TestNumberArithmetic(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name:   "true",
+			input:  "true;",
+			consts: []interface{}{},
+			insts: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "false",
+			input:  "false;",
+			consts: []interface{}{},
+			insts: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
