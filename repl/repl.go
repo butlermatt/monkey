@@ -3,18 +3,18 @@ package repl
 import (
 	"bufio"
 	"fmt"
-	"github.com/butlermatt/monkey/evaluator"
-	"github.com/butlermatt/monkey/lexer"
-	"github.com/butlermatt/monkey/object"
-	"github.com/butlermatt/monkey/parser"
 	"io"
+
+	"github.com/butlermatt/monkey/compiler"
+	"github.com/butlermatt/monkey/lexer"
+	"github.com/butlermatt/monkey/parser"
+	"github.com/butlermatt/monkey/vm"
 )
 
 const Prompt = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 
 	for {
 		fmt.Printf(Prompt)
@@ -31,11 +31,22 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			_, _ = io.WriteString(out, evaluated.Inspect())
-			_, _ = io.WriteString(out, "\n")
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			_, _ = fmt.Fprintf(out, "Woops! Compilation failed:\n%s\n", err)
+			continue
 		}
+
+		machine := vm.New(comp.ByteCode())
+		err = machine.Run()
+		if err != nil {
+			_, _ = fmt.Fprintf(out, "Woops! Executing bytecode failed:\n%s\n", err)
+		}
+
+		stackTop := machine.StackTop()
+		_, _ = io.WriteString(out, stackTop.Inspect())
+		_, _ = io.WriteString(out, "\n")
 	}
 }
 
