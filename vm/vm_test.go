@@ -20,7 +20,7 @@ func TestNumberArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"one", "1;", 1.0},
 		{"two", "2;", 2.0},
-		{"one plus two", "1 + 2;", 2.0}, // FIXME
+		{"one plus two", "1 + 2;", 3.0},
 	}
 
 	runVmTests(t, tests)
