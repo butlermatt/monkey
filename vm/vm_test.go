@@ -21,6 +21,16 @@ func TestNumberArithmetic(t *testing.T) {
 		{"one", "1;", 1.0},
 		{"two", "2;", 2.0},
 		{"one plus two", "1 + 2;", 3.0},
+		{"one minus two", "1 - 2;", -1.0},
+		{"one times two", "1 * 2;", 2.0},
+		{"four div two", "4 / 2;", 2.0},
+		{"compound 1", "50 / 2 * 2 + 10 - 5", 55.0},
+		{"compound 2", "5 * (2 + 10)", 60.0},
+		{"compound 3", "5 + 5 + 5 + 5 - 10", 10.0},
+		{"compound 4", "2 * 2 * 2 * 2 * 2", 32.0},
+		{"compound 5", "5 * 2 + 10", 20.0},
+		{"compound 6", "5 + 2 * 10", 25.0},
+		{"compound 7", "5 * (2 + 10)", 60.0},
 	}
 
 	runVmTests(t, tests)

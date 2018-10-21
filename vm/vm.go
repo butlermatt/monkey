@@ -43,13 +43,9 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpAdd:
-			right := vm.pop()
-			left := vm.pop()
-			lVal := left.(*object.Number).Value
-			rVal := right.(*object.Number).Value
-			res := lVal + rVal
-			if err := vm.push(&object.Number{Value: res}); err != nil {
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
+			err := vm.executeBinaryOperation(op)
+			if err != nil {
 				return err
 			}
 		case code.OpPop:
@@ -75,4 +71,39 @@ func (vm *VM) pop() object.Object {
 	o := vm.stack[vm.sp-1]
 	vm.sp--
 	return o
+}
+
+func (vm *VM) executeBinaryOperation(op code.OpCode) error {
+	right := vm.pop()
+	left := vm.pop()
+
+	lType := left.Type()
+	rType := right.Type()
+
+	if lType == object.NumberObj && rType == object.NumberObj {
+		return vm.executeBinaryNumberOperation(op, left, right)
+	}
+
+	return fmt.Errorf("unsupported types for binary operation: %s %s", lType, rType)
+}
+
+func (vm *VM) executeBinaryNumberOperation(op code.OpCode, left, right object.Object) error {
+	lVal := left.(*object.Number).Value
+	rVal := right.(*object.Number).Value
+
+	var result float64
+	switch op {
+	case code.OpAdd:
+		result = lVal + rVal
+	case code.OpSub:
+		result = lVal - rVal
+	case code.OpMul:
+		result = lVal * rVal
+	case code.OpDiv:
+		result = lVal / rVal
+	default:
+		return fmt.Errorf("unknown number operator: %d", op)
+	}
+
+	return vm.push(&object.Number{Value: result})
 }

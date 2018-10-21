@@ -31,6 +31,39 @@ func TestNumberArithmetic(t *testing.T) {
 			},
 		},
 		{
+			name:   "one minus two",
+			input:  "1 - 2;",
+			consts: []interface{}{1.0, 2.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSub),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "one times two",
+			input:  "1 * 2;",
+			consts: []interface{}{1.0, 2.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMul),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "two divided by 1",
+			input:  "2 / 1;",
+			consts: []interface{}{2.0, 1.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpDiv),
+				code.Make(code.OpPop),
+			},
+		},
+		{
 			name:   "pop expression statement",
 			input:  "1; 2",
 			consts: []interface{}{1.0, 2.0},

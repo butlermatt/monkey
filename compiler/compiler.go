@@ -54,8 +54,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		switch node.Operator {
 		case "+":
 			c.emit(code.OpAdd)
+		case "-":
+			c.emit(code.OpSub)
+		case "*":
+			c.emit(code.OpMul)
+		case "/":
+			c.emit(code.OpDiv)
 		default:
-			return fmt.Errorf("unkonwn operator %s", node.Operator)
+			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 	case *ast.NumberLiteral:
 		num := &object.Number{Value: node.Value}
