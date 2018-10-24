@@ -68,6 +68,16 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			_ = vm.pop()
+		case code.OpBang:
+			err := vm.executeBangOperator()
+			if err != nil {
+				return err
+			}
+		case code.OpMinus:
+			err := vm.executeMinusOperator()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -160,6 +170,27 @@ func (vm *VM) executeNumberComparison(op code.OpCode, left, right object.Object)
 	default:
 		return fmt.Errorf("unknown operator: %d", op)
 	}
+}
+
+func (vm *VM) executeBangOperator() error {
+	operand := vm.pop()
+
+	if operand == False {
+		return vm.push(True)
+	}
+
+	return vm.push(False)
+}
+
+func (vm *VM) executeMinusOperator() error {
+	oper := vm.pop()
+
+	if oper.Type() != object.NumberObj {
+		return fmt.Errorf("unsupported type for negation: %s", oper.Type())
+	}
+
+	value := oper.(*object.Number).Value
+	return vm.push(&object.Number{Value: -value})
 }
 
 func nativeBoolToObject(b bool) *object.Boolean {

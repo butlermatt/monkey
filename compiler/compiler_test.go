@@ -74,6 +74,16 @@ func TestNumberArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		{
+			name:   "negative one",
+			input:  "-1;",
+			consts: []interface{}{1.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpMinus),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	runCompilerTests(t, tests)
@@ -184,6 +194,16 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpTrue),
 				code.Make(code.OpFalse),
 				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "not true",
+			input:  "!true;",
+			consts: []interface{}{},
+			insts: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpBang),
 				code.Make(code.OpPop),
 			},
 		},

@@ -31,6 +31,10 @@ func TestNumberArithmetic(t *testing.T) {
 		{"compound 5", "5 * 2 + 10", 20.0},
 		{"compound 6", "5 + 2 * 10", 25.0},
 		{"compound 7", "5 * (2 + 10)", 60.0},
+		{"negative 5", "-5;", -5.0},
+		{"negative 10.5", "-10.5;", -10.5},
+		{"negative compound 1", "-50 + 100 + -50", 0.0},
+		{"negative compound 2", "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50.0},
 	}
 
 	runVmTests(t, tests)
@@ -63,6 +67,12 @@ func TestBooleanExpressions(t *testing.T) {
 		{"1 gt 2 is false", "(1 > 2) == false", true},
 		{"1 gteq 2 is true", "(1 >= 2) == true", false},
 		{"1 gteq 2 is false", "(1 >= 2) == false", true},
+		{"not true", "!true", false},
+		{"not false", "!false", true},
+		{"not five", "!5", false},
+		{"not not true", "!!true;", true},
+		{"not not false", "!!false;", false},
+		{"not not five", "!!5;", true},
 	}
 
 	runVmTests(t, tests)
