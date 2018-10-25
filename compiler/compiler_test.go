@@ -212,6 +212,47 @@ func TestBooleanExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestConditionals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name:   "if true ten",
+			input:  `if (true) { 10 }; 3333;`,
+			consts: []interface{}{10.0, 3333.0},
+			insts: []code.Instructions{
+				// 0000
+				code.Make(code.OpTrue),
+				// 0001
+				code.Make(code.OpJumpNotTrue, 7),
+				// 0004
+				code.Make(code.OpConstant, 0),
+				// 0007
+				code.Make(code.OpPop),
+				// 0008
+				code.Make(code.OpConstant, 1),
+				// 0011
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "if true ten else twenty",
+			input:  `if (true) { 10 } else { 20 }; 3333;`,
+			consts: []interface{}{10.0, 20.0, 3333.0},
+			insts: []code.Instructions{
+				code.Make(code.OpTrue),            // 0000
+				code.Make(code.OpJumpNotTrue, 10), // 0001
+				code.Make(code.OpConstant, 0),     // 0004
+				code.Make(code.OpJump, 13),        // 0007
+				code.Make(code.OpConstant, 1),     // 0010
+				code.Make(code.OpPop),             // 0013
+				code.Make(code.OpConstant, 2),     // 0014
+				code.Make(code.OpPop),             // 0017
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
