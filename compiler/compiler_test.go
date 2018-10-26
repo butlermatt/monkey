@@ -249,6 +249,53 @@ func TestConditionals(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestGlobalLetStatements(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name: "let one let two",
+			input: `let one = 1;
+let two = 2;
+`,
+			consts: []interface{}{1.0, 2.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 1),
+			},
+		},
+		{
+			name: "let one and retrieve",
+			input: `let one = 1;
+one;`,
+			consts: []interface{}{1.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name: "let one let two is one",
+			input: `let one = 1;
+let two = one;
+two;`,
+			consts: []interface{}{1.0},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
