@@ -9,8 +9,11 @@ import (
 
 const StackSize = 2048
 
-var True = &object.Boolean{Value: true}
-var False = &object.Boolean{Value: false}
+var (
+	True  = &object.Boolean{Value: true}
+	False = &object.Boolean{Value: false}
+	Null  = &object.Null{}
+)
 
 type VM struct {
 	constants    []object.Object
@@ -63,6 +66,11 @@ func (vm *VM) Run() error {
 			}
 		case code.OpFalse:
 			err := vm.push(False)
+			if err != nil {
+				return err
+			}
+		case code.OpNull:
+			err := vm.push(Null)
 			if err != nil {
 				return err
 			}
@@ -186,7 +194,7 @@ func (vm *VM) executeNumberComparison(op code.OpCode, left, right object.Object)
 func (vm *VM) executeBangOperator() error {
 	operand := vm.pop()
 
-	if operand == False {
+	if operand == False || operand == Null {
 		return vm.push(True)
 	}
 

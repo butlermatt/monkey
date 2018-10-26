@@ -219,18 +219,14 @@ func TestConditionals(t *testing.T) {
 			input:  `if (true) { 10 }; 3333;`,
 			consts: []interface{}{10.0, 3333.0},
 			insts: []code.Instructions{
-				// 0000
-				code.Make(code.OpTrue),
-				// 0001
-				code.Make(code.OpJumpNotTrue, 7),
-				// 0004
-				code.Make(code.OpConstant, 0),
-				// 0007
-				code.Make(code.OpPop),
-				// 0008
-				code.Make(code.OpConstant, 1),
-				// 0011
-				code.Make(code.OpPop),
+				code.Make(code.OpTrue),            // 0000
+				code.Make(code.OpJumpNotTrue, 10), // 0001
+				code.Make(code.OpConstant, 0),     // 0004
+				code.Make(code.OpJump, 11),        // 0007
+				code.Make(code.OpNull),            // 0010
+				code.Make(code.OpPop),             // 0011
+				code.Make(code.OpConstant, 1),     // 0012
+				code.Make(code.OpPop),             // 0015
 			},
 		},
 		{
