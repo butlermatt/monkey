@@ -296,6 +296,33 @@ two;`,
 	runCompilerTests(t, tests)
 }
 
+func TestStringExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name:   "simple string",
+			input:  `"monkey";`,
+			consts: []interface{}{"monkey"},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:   "simple concatenation",
+			input:  `"mon" + "key";`,
+			consts: []interface{}{"mon", "key"},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -357,6 +384,11 @@ func testConstants(t *testing.T, expected []interface{}, actual []object.Object)
 			if err != nil {
 				return fmt.Errorf("constant %d - testNumberObject failed: %s", i, err)
 			}
+		case string:
+			err := testStringObject(constant, actual[i])
+			if err != nil {
+				return fmt.Errorf("constant %d - testStringObject failed: %s", i, err)
+			}
 		}
 	}
 
@@ -371,6 +403,19 @@ func testNumberObject(expected float64, actual object.Object) error {
 
 	if res.Value != expected {
 		return fmt.Errorf("object has wrong value. expected=%f, got=%f", expected, res.Value)
+	}
+
+	return nil
+}
+
+func testStringObject(expected string, actual object.Object) error {
+	res, ok := actual.(*object.String)
+	if !ok {
+		return fmt.Errorf("object is wrong type. expected=*object.String, got=%T (%+[1]v)", actual)
+	}
+
+	if res.Value != expected {
+		return fmt.Errorf("object has wrong value. expected=%q, got=%q", expected, res.Value)
 	}
 
 	return nil
