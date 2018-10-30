@@ -146,6 +146,23 @@ func TestHashLiterals(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestIndexExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"array index", "[1, 2, 3][1]", 2.0},
+		{"array expression index", "[1, 2, 3][0 + 2]", 3.0},
+		{"array of array", "[[1, 2, 3]][0][0]", 1.0},
+		{"empty array first element", "[][0]", Null},
+		{"array index out of bounds", "[1, 2, 3][99]", Null},
+		{"array negative index", "[1][-1]", Null},
+		{"hash index", "{1: 1, 2: 2}[1]", 1.0},
+		{"hash index 2", "{1: 1, 2: 2}[2]", 2.0},
+		{"hash absent index", "{1:1}[0]", Null},
+		{"empty hash index", "{}[0]", Null},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
