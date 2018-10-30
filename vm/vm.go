@@ -132,6 +132,20 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpHash:
+			numEls := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			hash, err := vm.buildHash(vm.sp-numEls, vm.sp)
+			if err != nil {
+				return err
+			}
+			vm.sp = vm.sp - numEls
+
+			err = vm.push(hash)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -268,6 +282,25 @@ func (vm *VM) buildArray(start, end int) object.Object {
 	}
 
 	return &object.Array{Elements: els}
+}
+
+func (vm *VM) buildHash(start, end int) (object.Object, error) {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for i := start; i < end; i += 2 {
+		key := vm.stack[i]
+		val := vm.stack[i+1]
+
+		pair := object.HashPair{Key: key, Value: val}
+		hk, ok := key.(object.Hashable)
+		if !ok {
+			return nil, fmt.Errorf("unusable as hash key: %s", key.Type())
+		}
+
+		pairs[hk.HashKey()] = pair
+	}
+
+	return &object.Hash{Pairs: pairs}, nil
 }
 
 func isTruthy(obj object.Object) bool {

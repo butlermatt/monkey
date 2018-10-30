@@ -126,6 +126,26 @@ func TestArrayLiterals(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestHashLiterals(t *testing.T) {
+	tests := []vmTestCase{
+		{"empty hash", "{}", map[object.HashKey]float64{}},
+		{"simple hash", "{1: 2, 2: 3}",
+			map[object.HashKey]float64{
+				(&object.Number{Value: 1}).HashKey(): 2,
+				(&object.Number{Value: 2}).HashKey(): 3,
+			},
+		},
+		{"complex hash", "{1 + 1: 2 * 2, 3 + 3: 4 * 4}",
+			map[object.HashKey]float64{
+				(&object.Number{Value: 2}).HashKey(): 4,
+				(&object.Number{Value: 6}).HashKey(): 16,
+			},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
@@ -184,6 +204,28 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 
 		for i, el := range expected {
 			err := testNumberObject(el, array.Elements[i])
+			if err != nil {
+				t.Errorf("testNumberObject failed: %s", err)
+			}
+		}
+	case map[object.HashKey]float64:
+		hash, ok := actual.(*object.Hash)
+		if !ok {
+			t.Errorf("object is wrong type. expected=*object.Hash, got=%T (%+[1]v)", actual)
+			return
+		}
+
+		if len(hash.Pairs) != len(expected) {
+			t.Errorf("hash has wrong number of values. expected=%d, got=%d", len(expected), len(hash.Pairs))
+			return
+		}
+		for eKey, eVal := range expected {
+			pair, ok := hash.Pairs[eKey]
+			if !ok {
+				t.Errorf("no pair for given key in Pairs")
+			}
+
+			err := testNumberObject(eVal, pair.Value)
 			if err != nil {
 				t.Errorf("testNumberObject failed: %s", err)
 			}
