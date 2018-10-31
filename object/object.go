@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/butlermatt/monkey/ast"
+	"github.com/butlermatt/monkey/code"
 	"hash/fnv"
 	"strings"
 )
@@ -13,16 +14,17 @@ type BuiltinFunction func(line int, args ...Object) Object
 type ObjectType string
 
 const (
-	NumberObj   ObjectType = "NUMBER"
-	BooleanObj  ObjectType = "BOOLEAN"
-	NullObj     ObjectType = "NULL"
-	StringObj   ObjectType = "STRING"
-	ArrayObj    ObjectType = "ARRAY"
-	HashObj     ObjectType = "HASH"
-	FunctionObj ObjectType = "FUNCTION"
-	ReturnObj   ObjectType = "RETURN_VALUE"
-	ErrorObj    ObjectType = "ERROR"
-	BuiltinObj  ObjectType = "BUILTIN"
+	NumberObj           ObjectType = "NUMBER"
+	BooleanObj          ObjectType = "BOOLEAN"
+	NullObj             ObjectType = "NULL"
+	StringObj           ObjectType = "STRING"
+	ArrayObj            ObjectType = "ARRAY"
+	HashObj             ObjectType = "HASH"
+	FunctionObj         ObjectType = "FUNCTION"
+	ReturnObj           ObjectType = "RETURN_VALUE"
+	ErrorObj            ObjectType = "ERROR"
+	BuiltinObj          ObjectType = "BUILTIN"
+	CompiledFunctionObj ObjectType = "COMPILED_FUNCTION"
 )
 
 type Object interface {
@@ -174,3 +176,12 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BuiltinObj }
 func (b *Builtin) Inspect() string  { return "builtin function" }
+
+type CompiledFunction struct {
+	Instructions code.Instructions
+}
+
+func (cf *CompiledFunction) Type() ObjectType { return CompiledFunctionObj }
+func (cf *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", cf)
+}

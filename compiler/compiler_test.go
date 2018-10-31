@@ -17,6 +17,52 @@ type compilerTestCase struct {
 	insts  []code.Instructions
 }
 
+func TestCompilerScopes(t *testing.T) {
+	compiler := New()
+	if compiler.scopeInd != 0 {
+		t.Errorf("scope index wrong. expected=%d, got=%d", 0, compiler.scopeInd)
+	}
+
+	compiler.emit(code.OpMul)
+
+	compiler.enterScope()
+	if compiler.scopeInd != 1 {
+		t.Errorf("scope index wrong. expected=%d, got=%d", 1, compiler.scopeInd)
+	}
+
+	compiler.emit(code.OpSub)
+
+	if len(compiler.scopes[compiler.scopeInd].instructions) != 1 {
+		t.Errorf("instructions length wrong. expected=%d, got=%d", 1, len(compiler.scopes[compiler.scopeInd].instructions))
+	}
+
+	last := compiler.scopes[compiler.scopeInd].last
+	if last.Opcode != code.OpSub {
+		t.Errorf("last instruction OpCode wrong. expected=%d, got=%d", code.OpSub, last.Opcode)
+	}
+
+	compiler.leaveScope()
+	if compiler.scopeInd != 0 {
+		t.Errorf("scope index wrong. expected=%d, got=%d", 0, compiler.scopeInd)
+	}
+
+	compiler.emit(code.OpAdd)
+
+	if len(compiler.scopes[compiler.scopeInd].instructions) != 2 {
+		t.Errorf("instruction length wrong. expected=%d, got=%d", 2, len(compiler.scopes[compiler.scopeInd].instructions))
+	}
+
+	last = compiler.scopes[compiler.scopeInd].last
+	if last.Opcode != code.OpAdd {
+		t.Errorf("last instruction OpCode wrong. expected=%d, got=%d", code.OpAdd, last.Opcode)
+	}
+
+	prev := compiler.scopes[compiler.scopeInd].prev
+	if prev.Opcode != code.OpMul {
+		t.Errorf("prev instruction OpCode wrong. expected=%d, got=%d", code.OpMul, last.Opcode)
+	}
+}
+
 func TestNumberArithmetic(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -455,6 +501,80 @@ func TestIndexExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestFunctions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name:  "no args explicit return",
+			input: `fn() { return 5 + 10 }`,
+			consts: []interface{}{
+				5.0,
+				10.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:  "no args implicit return",
+			input: `fn() { 5 + 10 }`,
+			consts: []interface{}{
+				5.0,
+				10.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:  "no args implicit return 2",
+			input: `fn() { 1; 2 }`,
+			consts: []interface{}{
+				1.0,
+				2.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name:  "no args empty body",
+			input: `fn() { }`,
+			consts: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -520,6 +640,15 @@ func testConstants(t *testing.T, expected []interface{}, actual []object.Object)
 			err := testStringObject(constant, actual[i])
 			if err != nil {
 				return fmt.Errorf("constant %d - testStringObject failed: %s", i, err)
+			}
+		case []code.Instructions:
+			fn, ok := actual[i].(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("constant %d is not a function: %T", i, actual[i])
+			}
+			err := testInstructions(constant, fn.Instructions)
+			if err != nil {
+				return fmt.Errorf("constant %d - testInstructions failed: %s", i, err)
 			}
 		}
 	}
