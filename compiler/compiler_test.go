@@ -575,6 +575,48 @@ func TestFunctions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestFunctionCalls(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name:  "literal no args implicit return",
+			input: `fn() { 24 }();`,
+			consts: []interface{}{
+				24.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0), // the literal 24
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 1), // compiled function
+				code.Make(code.OpCall),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name: "call assigned function",
+			input: `let noArg = fn() { 24 };
+					noArg();`,
+			consts: []interface{}{
+				24.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0), // the literal 24
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 1), // Compiled function.
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpCall),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
