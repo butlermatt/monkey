@@ -7,6 +7,7 @@ import (
 	"github.com/butlermatt/monkey/object"
 )
 
+const MaxFrames = 1024
 const StackSize = 2048
 const GlobalsSize = 65536
 
@@ -17,24 +18,34 @@ var (
 )
 
 type VM struct {
-	constants    []object.Object
-	instructions code.Instructions
+	constants []object.Object
 
 	stack []object.Object
 	sp    int // Always points to the _next_ value. Top of stack is stack[sp-1]
 
 	globals []object.Object
+
+	frames   []*Frame
+	frameInd int
 }
 
 func New(bytecode *compiler.ByteCode) *VM {
+	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
+	mainFrame := NewFrame(mainFn)
+
+	frames := make([]*Frame, MaxFrames)
+	frames[0] = mainFrame
+
 	return &VM{
-		instructions: bytecode.Instructions,
-		constants:    bytecode.Constants,
+		constants: bytecode.Constants,
 
 		stack: make([]object.Object, StackSize),
 		sp:    0,
 
 		globals: make([]object.Object, GlobalsSize),
+
+		frames:   frames,
+		frameInd: 1,
 	}
 }
 
@@ -44,18 +55,39 @@ func NewWithGlobalStore(bytecode *compiler.ByteCode, s []object.Object) *VM {
 	return vm
 }
 
+func (vm *VM) currentFrame() *Frame {
+	return vm.frames[vm.frameInd-1]
+}
+
+func (vm *VM) pushFrame(f *Frame) {
+	vm.frames[vm.frameInd] = f
+	vm.frameInd++
+}
+
+func (vm *VM) popFrame() *Frame {
+	vm.frameInd--
+	return vm.frames[vm.frameInd]
+}
+
 func (vm *VM) LastPoppedStackElem() object.Object {
 	return vm.stack[vm.sp]
 }
 
 func (vm *VM) Run() error {
-	for ip := 0; ip < len(vm.instructions); ip++ {
-		op := code.OpCode(vm.instructions[ip])
+	var ip *int
+	var ins code.Instructions
+	var op code.OpCode
+
+	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
+		ip = &(vm.currentFrame().ip)
+		*ip++
+		ins = vm.currentFrame().Instructions()
+		op = code.OpCode(ins[*ip])
 
 		switch op {
 		case code.OpConstant:
-			ci := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			ci := code.ReadUint16(ins[*ip+1:])
+			vm.currentFrame().ip += 2
 			err := vm.push(vm.constants[ci])
 			if err != nil {
 				return err
@@ -98,32 +130,32 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpJump:
-			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip = pos - 1
+			pos := int(code.ReadUint16(ins[*ip+1:]))
+			*ip = pos - 1
 		case code.OpJumpNotTrue:
-			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip += 2
+			pos := int(code.ReadUint16(ins[*ip+1:]))
+			*ip += 2
 
 			condition := vm.pop()
 			if !isTruthy(condition) {
-				ip = pos - 1
+				*ip = pos - 1
 			}
 		case code.OpSetGlobal:
-			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			globalIndex := code.ReadUint16(ins[*ip+1:])
+			*ip += 2
 
 			vm.globals[globalIndex] = vm.pop()
 		case code.OpGetGlobal:
-			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			globalIndex := code.ReadUint16(ins[*ip+1:])
+			*ip += 2
 
 			err := vm.push(vm.globals[globalIndex])
 			if err != nil {
 				return err
 			}
 		case code.OpArray:
-			numEls := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip += 2
+			numEls := int(code.ReadUint16(ins[*ip+1:]))
+			*ip += 2
 
 			array := vm.buildArray(vm.sp-numEls, vm.sp)
 			vm.sp = vm.sp - numEls
@@ -133,8 +165,8 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpHash:
-			numEls := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip += 2
+			numEls := int(code.ReadUint16(ins[*ip+1:]))
+			*ip += 2
 
 			hash, err := vm.buildHash(vm.sp-numEls, vm.sp)
 			if err != nil {
@@ -151,6 +183,31 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 
 			err := vm.executeIndexExpression(left, ind)
+			if err != nil {
+				return err
+			}
+		case code.OpCall:
+			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("calling non-function")
+			}
+			frame := NewFrame(fn)
+			vm.pushFrame(frame)
+		case code.OpReturnValue:
+			val := vm.pop()
+
+			vm.popFrame()
+			vm.pop()
+
+			err := vm.push(val)
+			if err != nil {
+				return err
+			}
+		case code.OpReturn:
+			vm.popFrame()
+			vm.pop()
+
+			err := vm.push(Null)
 			if err != nil {
 				return err
 			}

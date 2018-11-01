@@ -163,6 +163,66 @@ func TestIndexExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestCallingFunctionsWithoutArguments(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			name: "assigned fn 5 plus 10 implicit return",
+			input: `let fivePlusTen = fn() { 5 + 10; };
+					fivePlusTen();`,
+			expected: 15.0,
+		},
+		{
+			name: "multiple fns in an expression",
+			input: `let one = fn() { 1; };
+					let two = fn() { 2; };
+					one() + two();`,
+			expected: 3.0,
+		},
+		{
+			name: "nested calls",
+			input: `let a = fn() { 1 };
+					let b = fn() { a() + 1 };
+					let c = fn() { b() + 1 };
+					c();`,
+			expected: 3.0,
+		},
+		{
+			name: "explicit return early",
+			input: `let exitEarly = fn() { return 99; 100; };
+					exitEarly();`,
+			expected: 99.0,
+		},
+		{
+			name: "explicit return early return",
+			input: `let exitEarly = fn() { return 99; return 100; };
+					exitEarly();`,
+			expected: 99.0,
+		},
+		{
+			name: "no return",
+			input: `let noReturn = fn() {};
+					noReturn();`,
+			expected: Null,
+		},
+		{
+			name: "return a no return",
+			input: `let noReturn = fn() {};
+					let caller = fn() { noReturn(); };
+					caller();`,
+			expected: Null,
+		},
+		{
+			name: "first class function",
+			input: `let returnsOne = fn() { 1; };
+					let returnsFunc = fn() { returnsOne; };
+					returnsFunc()();`,
+			expected: 1.0,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
