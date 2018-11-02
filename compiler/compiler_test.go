@@ -22,6 +22,7 @@ func TestCompilerScopes(t *testing.T) {
 	if compiler.scopeInd != 0 {
 		t.Errorf("scope index wrong. expected=%d, got=%d", 0, compiler.scopeInd)
 	}
+	globalSymTable := compiler.symbolTable
 
 	compiler.emit(code.OpMul)
 
@@ -41,9 +42,20 @@ func TestCompilerScopes(t *testing.T) {
 		t.Errorf("last instruction OpCode wrong. expected=%d, got=%d", code.OpSub, last.Opcode)
 	}
 
+	if compiler.symbolTable.Outer != globalSymTable {
+		t.Errorf("compiler did not enclose symbol table")
+	}
+
 	compiler.leaveScope()
 	if compiler.scopeInd != 0 {
 		t.Errorf("scope index wrong. expected=%d, got=%d", 0, compiler.scopeInd)
+	}
+
+	if compiler.symbolTable != globalSymTable {
+		t.Errorf("compiler did not restore global symbol table")
+	}
+	if compiler.symbolTable.Outer != nil {
+		t.Errorf("compiler modified global symbol table incorrectly")
 	}
 
 	compiler.emit(code.OpAdd)
@@ -394,7 +406,7 @@ func TestLetStatementScopes(t *testing.T) {
 				77.0,
 				[]code.Instructions{
 					code.Make(code.OpConstant, 0),
-					code.Make(code.OpSetGlobal, 0),
+					code.Make(code.OpSetLocal, 0),
 					code.Make(code.OpConstant, 1),
 					code.Make(code.OpSetLocal, 1),
 					code.Make(code.OpGetLocal, 0),
