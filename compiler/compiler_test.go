@@ -342,6 +342,77 @@ two;`,
 	runCompilerTests(t, tests)
 }
 
+func TestLetStatementScopes(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			name: "global in function",
+			input: `let num = 55;
+					fn() { num }`,
+			consts: []interface{}{
+				55.0,
+				[]code.Instructions{
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name: "single local in function",
+			input: `fn() {
+						let num = 55;
+						num
+					}`,
+			consts: []interface{}{
+				55.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			name: "two locals in function return sum",
+			input: `fn() {
+						let a = 55;
+						let b = 77;
+						a + b
+					}`,
+			consts: []interface{}{
+				55.0,
+				77.0,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetGlobal, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetLocal, 1),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpAdd),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			insts: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestStringExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
