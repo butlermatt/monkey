@@ -7,11 +7,12 @@ import (
 
 type Frame struct {
 	fn *object.CompiledFunction
-	ip int
+	ip int // Instruction pointer points to compiled function instruction
+	bp int // Base Pointer points to position on stack immediately before calling function
 }
 
-func NewFrame(fn *object.CompiledFunction) *Frame {
-	return &Frame{fn: fn, ip: -1}
+func NewFrame(fn *object.CompiledFunction, base int) *Frame {
+	return &Frame{fn: fn, ip: -1, bp: base}
 }
 
 func (f *Frame) Instructions() code.Instructions {

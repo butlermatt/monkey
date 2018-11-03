@@ -31,7 +31,7 @@ type VM struct {
 
 func New(bytecode *compiler.ByteCode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -191,23 +191,40 @@ func (vm *VM) Run() error {
 			if !ok {
 				return fmt.Errorf("calling non-function")
 			}
-			frame := NewFrame(fn)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+			vm.sp = frame.bp + fn.NumLocals
+			if vm.sp >= StackSize {
+				return fmt.Errorf("stack overflow")
+			}
 		case code.OpReturnValue:
 			val := vm.pop()
 
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.bp - 1
 
 			err := vm.push(val)
 			if err != nil {
 				return err
 			}
 		case code.OpReturn:
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.bp - 1
 
 			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
+		case code.OpSetLocal:
+			localInd := code.ReadUint8(ins[*ip+1:])
+			*ip += 1
+			frame := vm.currentFrame()
+			vm.stack[frame.bp+int(localInd)] = vm.pop()
+		case code.OpGetLocal:
+			localInd := code.ReadUint8(ins[*ip+1:])
+			*ip += 1
+			frame := vm.currentFrame()
+			err := vm.push(vm.stack[frame.bp+int(localInd)])
 			if err != nil {
 				return err
 			}

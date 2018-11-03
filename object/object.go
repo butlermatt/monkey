@@ -179,6 +179,7 @@ func (b *Builtin) Inspect() string  { return "builtin function" }
 
 type CompiledFunction struct {
 	Instructions code.Instructions
+	NumLocals    int
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return CompiledFunctionObj }

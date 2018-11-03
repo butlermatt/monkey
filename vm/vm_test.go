@@ -223,6 +223,56 @@ func TestCallingFunctionsWithoutArguments(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestCallingFunctionsWithBindings(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			name: "shadow binding one",
+			input: `let one = fn() { let one = 1; one };
+					one();`,
+			expected: 1.0,
+		},
+		{
+			name: "add one and two",
+			input: `let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+					oneAndTwo();`,
+			expected: 3.0,
+		},
+		{
+			name: "add oneAndTwo and threeAndFour",
+			input: `let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+					let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+					oneAndTwo() + threeAndFour();`,
+			expected: 10.0,
+		},
+		{
+			name: "two local foobar",
+			input: `let firstFoo = fn() { let foobar = 50; foobar; };
+					let secondFoo = fn() { let foobar = 100; foobar; };
+					firstFoo() + secondFoo();`,
+			expected: 150.0,
+		},
+		{
+			name: "with globals",
+			input: `let globalSeed = 50;
+					let minusOne = fn() { let num = 1; globalSeed - num; };
+					let minusTwo = fn() { let num = 2; globalSeed - num; };
+					minusOne() + minusTwo();`,
+			expected: 97.0,
+		},
+		{
+			name: "nested function",
+			input: `let returnsOneReturner = fn() {
+						let returnsOne = fn() { 1; };
+						return returnsOne;
+					}
+					returnsOneReturner()();`,
+			expected: 1.0,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
