@@ -158,3 +158,43 @@ func TestResolveNestedLocals(t *testing.T) {
 		}
 	}
 }
+
+func TestDefineResolveBuiltins(t *testing.T) {
+	global := NewSymbolTable()
+	firstLocal := NewEnclosedSymbolTable(global)
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	tables := []struct {
+		name  string
+		table *SymbolTable
+	}{
+		{"global", global},
+		{"first", firstLocal},
+		{"second", secondLocal},
+	}
+
+	expected := []Symbol{
+		{Name: "a", Scope: BuiltinScope, Index: 0},
+		{Name: "c", Scope: BuiltinScope, Index: 1},
+		{Name: "e", Scope: BuiltinScope, Index: 2},
+		{Name: "f", Scope: BuiltinScope, Index: 3},
+	}
+
+	for i, v := range expected {
+		global.DefineBuiltin(i, v.Name)
+	}
+
+	for _, table := range tables {
+		for _, sym := range expected {
+			t.Run(table.name+"/"+sym.Name, func(t *testing.T) {
+				res, ok := table.table.Resolve(sym.Name)
+				if !ok {
+					t.Fatalf("unable to resolve name: %q", sym.Name)
+				}
+
+				if res != sym {
+					t.Errorf("resolved symbol %q incorrectly: expected=%+v, got=%+v", sym.Name, sym, res)
+				}
+			})
+		}
+	}
+}

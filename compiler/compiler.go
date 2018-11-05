@@ -39,9 +39,15 @@ func New() *Compiler {
 		prev:         EmittedInstruction{},
 	}
 
+	table := NewSymbolTable()
+
+	for i, v := range object.Builtins {
+		table.DefineBuiltin(i, v.Name)
+	}
+
 	return &Compiler{
 		constants:   []object.Object{},
-		symbolTable: NewSymbolTable(),
+		symbolTable: table,
 		scopes:      []CompilationScope{mainScope},
 		scopeInd:    0,
 	}
@@ -197,11 +203,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !ok {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
-		if symbol.Scope == GlobalScope {
-			c.emit(code.OpGetGlobal, symbol.Index)
-		} else {
-			c.emit(code.OpGetLocal, symbol.Index)
-		}
+		c.loadSymbol(symbol)
 	case *ast.LetStatement:
 		err := c.Compile(node.Value)
 		if err != nil {
@@ -397,4 +399,18 @@ func (c *Compiler) replacePopWithReturn() {
 	c.replaceInst(lastPos, code.Make(code.OpReturnValue))
 
 	c.scopes[c.scopeInd].last.Opcode = code.OpReturnValue
+}
+
+func (c *Compiler) loadSymbol(s Symbol) {
+	var op code.OpCode
+	switch s.Scope {
+	case GlobalScope:
+		op = code.OpGetGlobal
+	case LocalScope:
+		op = code.OpGetLocal
+	case BuiltinScope:
+		op = code.OpGetBuiltin
+	}
+
+	c.emit(op, s.Index)
 }
