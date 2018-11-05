@@ -329,7 +329,11 @@ func applyFunction(line int, fn object.Object, args []object.Object) object.Obje
 		evaluated := Eval(fn.Body, extEnv)
 		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
-		return fn.Fn(line, args...)
+		if result := fn.Fn(line, args...); result != nil {
+			return result
+		}
+
+		return Null
 	}
 
 	return newError(line, "not a function: %s", fn.Type())
