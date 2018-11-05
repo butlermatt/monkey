@@ -187,15 +187,12 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCall:
-			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("calling non-function")
-			}
-			frame := NewFrame(fn, vm.sp)
-			vm.pushFrame(frame)
-			vm.sp = frame.bp + fn.NumLocals
-			if vm.sp >= StackSize {
-				return fmt.Errorf("stack overflow")
+			numArgs := code.ReadUint8(ins[*ip+1:])
+			*ip += 1
+
+			err := vm.callFunction(int(numArgs))
+			if err != nil {
+				return err
 			}
 		case code.OpReturnValue:
 			val := vm.pop()
@@ -422,6 +419,27 @@ func (vm *VM) executeHashIndex(hash, index object.Object) error {
 	}
 
 	return vm.push(pair.Value)
+}
+
+func (vm *VM) callFunction(numArgs int) error {
+	fn, ok := vm.stack[vm.sp-1-numArgs].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("calling non-function")
+	}
+
+	if numArgs != fn.NumParams {
+		return fmt.Errorf("wrong number of arguments: expected=%d, got=%d", fn.NumParams, numArgs)
+	}
+
+	frame := NewFrame(fn, vm.sp-numArgs)
+	vm.pushFrame(frame)
+
+	vm.sp = frame.bp + fn.NumLocals
+
+	if vm.sp >= StackSize {
+		return fmt.Errorf("stack overflow")
+	}
+	return nil
 }
 
 func isTruthy(obj object.Object) bool {

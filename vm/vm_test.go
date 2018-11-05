@@ -273,6 +273,86 @@ func TestCallingFunctionsWithBindings(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestCallFunctionsWithArgsAndBindings(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			name: "single arg returns itself",
+			input: `let identity = fn(a) { a; };
+					identity(4);`,
+			expected: 4.0,
+		},
+		{
+			name: "sum two arguments",
+			input: `let sum = fn(a, b) { a + b; };
+					sum(1, 2);`,
+			expected: 3.0,
+		},
+		{
+			name: "sum and assign to local and return",
+			input: `let sum = fn(a, b) { let c = a + b; c; };
+					sum(1, 2);`,
+			expected: 3.0,
+		},
+		{
+			name: "sum and assign to local and return added",
+			input: `let sum = fn(a, b) { let c = a + b; c; };
+					sum(1, 2) + sum(3, 4);`,
+			expected: 10.0,
+		},
+		{
+			name: "sum and assign to local and return called by another func",
+			input: `let sum = fn(a, b) { let c = a + b; c; };
+					let outer = fn() { sum(1, 2) + sum(3, 4); };
+					outer();`,
+			expected: 10.0,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestCallingFunctionWrongArgs(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			name:     "zero arg called with one",
+			input:    `fn() { 1; }(1);`,
+			expected: `wrong number of arguments: expected=0, got=1`,
+		},
+		{
+			name:     "one arg called with none",
+			input:    `fn(a) { a; }();`,
+			expected: `wrong number of arguments: expected=1, got=0`,
+		},
+		{
+			name:     "two args called with one",
+			input:    `fn(a, b) { a + b; }(1);`,
+			expected: `wrong number of arguments: expected=2, got=1`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			program := parse(tt.input)
+
+			comp := compiler.New()
+			err := comp.Compile(program)
+			if err != nil {
+				t.Fatalf("compiler error: %s", err)
+			}
+
+			vm := New(comp.ByteCode())
+			err = vm.Run()
+			if err == nil {
+				t.Fatalf("expected VM error but had none.")
+			}
+
+			if err.Error() != tt.expected {
+				t.Fatalf("wrong VM error. expected=%q, got=%q", tt.expected, err)
+			}
+		})
+	}
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
