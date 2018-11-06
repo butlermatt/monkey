@@ -299,7 +299,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		{"len-empty-string", `len("");`, 0.0},
 		{"len-four", `len("four");`, 4.0},
 		{"len-hello-world", `len("Hello world");`, 11.0},
-		{"len-1", `len(1);`, "argument to `len` not supported. got=NUMBER"},
+		{"len-1", `len(1);`, "argument to `len` not supported, got NUMBER"},
 		{"len-one-two", `len("one", "two");`, "wrong number of arguments. expected=1, got=2"},
 	}
 
@@ -408,7 +408,7 @@ func TestHashLiterals(t *testing.T) {
 	for exKey, exVal := range expected {
 		pair, ok := result.Pairs[exKey]
 		if !ok {
-			t.Errorf("hash has no pair for the key %d", exKey)
+			t.Errorf("hash has no pair for the key %d", exKey.Value)
 			continue
 		}
 
