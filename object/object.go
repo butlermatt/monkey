@@ -25,6 +25,7 @@ const (
 	ErrorObj            ObjectType = "ERROR"
 	BuiltinObj          ObjectType = "BUILTIN"
 	CompiledFunctionObj ObjectType = "COMPILED_FUNCTION"
+	ClosureObj          ObjectType = "CLOSURE"
 )
 
 type Object interface {
@@ -187,3 +188,11 @@ func (cf *CompiledFunction) Type() ObjectType { return CompiledFunctionObj }
 func (cf *CompiledFunction) Inspect() string {
 	return fmt.Sprintf("CompiledFunction[%p]", cf)
 }
+
+type Closure struct {
+	Fn   *CompiledFunction
+	Free []Object
+}
+
+func (c *Closure) Type() ObjectType { return ClosureObj }
+func (c *Closure) Inspect() string  { return fmt.Sprintf("Closure[%p]", c) }

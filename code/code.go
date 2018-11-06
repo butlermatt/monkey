@@ -45,6 +45,8 @@ const (
 	OpCall
 	OpReturn
 	OpReturnValue
+
+	OpClosure
 )
 
 type Instructions []byte
@@ -81,6 +83,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
+	case 2:
+		return fmt.Sprintf("%s %d %d", def.Name, operands[0], operands[1])
 	}
 
 	return fmt.Sprintf("ERROR: unhandled operandCount (%d) for %s\n", count, def.Name)
@@ -128,6 +132,8 @@ var definitions = map[OpCode]*Definition{
 	OpCall:        {"OpCall", []int{1}},
 	OpReturn:      {"OpReturn", []int{}},
 	OpReturnValue: {"OpReturnValue", []int{}},
+
+	OpClosure: {"OpClosure", []int{2, 1}},
 }
 
 func Lookup(op byte) (*Definition, error) {

@@ -284,7 +284,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		inst := c.leaveScope()
 		fn := &object.CompiledFunction{Instructions: inst, NumLocals: numLocals, NumParams: len(node.Parameters)}
-		c.emit(code.OpConstant, c.addConstant(fn))
+		c.emit(code.OpClosure, c.addConstant(fn), 0)
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
 		if err != nil {
