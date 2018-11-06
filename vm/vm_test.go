@@ -353,6 +353,32 @@ func TestCallingFunctionWrongArgs(t *testing.T) {
 	}
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []vmTestCase{
+		{"len empty string", `len("")`, 0.0},
+		{"len four", `len("four")`, 4.0},
+		{"len hello world", `len("hello world")`, 11.0},
+		{"len number", `len(1)`, &object.Error{Message: "argument to `len` not supported, got NUMBER"}},
+		{"len two args", `len("one", "two")`, &object.Error{Message: "wrong number of arguments. expected=1, got=2"}},
+		{"len array", `len([1, 2, 3])`, 3.0},
+		{"len empty array", `len([])`, 0.0},
+		{"puts two strings", `puts("hello", "world")`, Null},
+		{"first array", `first([1, 2, 3])`, 1.0},
+		{"first empty array", `first([])`, Null},
+		{"first number", `first(1)`, &object.Error{Message: "argument to `first` must be an ARRAY, got NUMBER"}},
+		{"last array", `last([1, 2, 3])`, 3.0},
+		{"last empty array", `last([])`, Null},
+		{"last number", `last(1)`, &object.Error{Message: "argument to `last` must be an ARRAY, got NUMBER"}},
+		{"rest array", `rest([1, 2, 3])`, []float64{2, 3}},
+		{"rest empty array", `rest([])`, Null},
+		{"rest number", `rest(1)`, &object.Error{Message: "argument to `rest` must be an ARRAY, got NUMBER"}},
+		{"push one", `push([], 1)`, []float64{1}},
+		{"push number", `push(1, 1)`, &object.Error{Message: "argument to `push` must be an ARRAY, got NUMBER"}},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
@@ -440,6 +466,15 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not Null: %T (%+[1]v)", actual)
+		}
+	case *object.Error:
+		errObj, ok := actual.(*object.Error)
+		if !ok {
+			t.Errorf("object is wrong type. expected=*object.Error, got=%T (%+[1]v)", actual)
+			return
+		}
+		if errObj.Message != expected.Message {
+			t.Errorf("wrong error message. expected=%q, got=%q", expected.Message, errObj.Message)
 		}
 	}
 }

@@ -16,16 +16,13 @@ var Builtins = []struct {
 	{"push", &Builtin{Fn: builtin_push}},
 }
 
-func newError(line int, format string, a ...interface{}) *Error {
-	msg := "on line %d - " + format
-	args := []interface{}{line}
-	args = append(args, a...)
-	return &Error{Message: fmt.Sprintf(msg, args...)}
+func newError(format string, a ...interface{}) *Error {
+	return &Error{Message: fmt.Sprintf(format, a...)}
 }
 
-func builtin_len(line int, args ...Object) Object {
+func builtin_len(args ...Object) Object {
 	if len(args) != 1 {
-		return newError(line, "wrong number of arguments. expected=1, got=%d", len(args))
+		return newError("wrong number of arguments. expected=1, got=%d", len(args))
 	}
 
 	switch arg := args[0].(type) {
@@ -35,10 +32,10 @@ func builtin_len(line int, args ...Object) Object {
 		return &Number{Value: float64(len(arg.Value))}
 	}
 
-	return newError(line, "argument to `len` not supported. got=%s", args[0].Type())
+	return newError("argument to `len` not supported, got %s", args[0].Type())
 }
 
-func builtin_puts(_ int, args ...Object) Object {
+func builtin_puts(args ...Object) Object {
 	for _, arg := range args {
 		fmt.Println(arg.Inspect())
 	}
@@ -46,13 +43,13 @@ func builtin_puts(_ int, args ...Object) Object {
 	return nil
 }
 
-func builtin_first(line int, args ...Object) Object {
+func builtin_first(args ...Object) Object {
 	if len(args) != 1 {
-		return newError(line, "wrong number of arguments. expected=%d, got=%d", 1, len(args))
+		return newError("wrong number of arguments. expected=%d, got=%d", 1, len(args))
 	}
 
 	if args[0].Type() != ArrayObj {
-		return newError(line, "argument to `first` must be an ARRAY. got=%s", args[0].Type())
+		return newError("argument to `first` must be an ARRAY, got %s", args[0].Type())
 	}
 
 	arr := args[0].(*Array)
@@ -63,13 +60,13 @@ func builtin_first(line int, args ...Object) Object {
 	return nil
 }
 
-func builtin_last(line int, args ...Object) Object {
+func builtin_last(args ...Object) Object {
 	if len(args) != 1 {
-		return newError(line, "wrong number of arguments. expected=%d, got=%d", 1, len(args))
+		return newError("wrong number of arguments. expected=%d, got=%d", 1, len(args))
 	}
 
 	if args[0].Type() != ArrayObj {
-		return newError(line, "argument to `last` must be an ARRAY. got=%s", args[0].Type())
+		return newError("argument to `last` must be an ARRAY, got %s", args[0].Type())
 	}
 
 	arr := args[0].(*Array)
@@ -81,13 +78,13 @@ func builtin_last(line int, args ...Object) Object {
 	return nil
 }
 
-func builtin_rest(line int, args ...Object) Object {
+func builtin_rest(args ...Object) Object {
 	if len(args) != 1 {
-		return newError(line, "wrong number of arguments. expected=%d, got=%d", 1, len(args))
+		return newError("wrong number of arguments. expected=%d, got=%d", 1, len(args))
 	}
 
 	if args[0].Type() != ArrayObj {
-		return newError(line, "argument to `last` must be an ARRAY. got %s", args[0].Type())
+		return newError("argument to `rest` must be an ARRAY, got %s", args[0].Type())
 	}
 
 	arr := args[0].(*Array)
@@ -101,13 +98,13 @@ func builtin_rest(line int, args ...Object) Object {
 	return nil
 }
 
-func builtin_push(line int, args ...Object) Object {
+func builtin_push(args ...Object) Object {
 	if len(args) != 2 {
-		return newError(line, "wrong number of arguments. expected=%d, got=%d", 2, len(args))
+		return newError("wrong number of arguments. expected=%d, got=%d", 2, len(args))
 	}
 
 	if args[0].Type() != ArrayObj {
-		return newError(line, "argument to `push` must be ARRAY, got %s", args[0].Type())
+		return newError("argument to `push` must be an ARRAY, got %s", args[0].Type())
 	}
 
 	arr := args[0].(*Array)

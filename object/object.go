@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type BuiltinFunction func(line int, args ...Object) Object
+type BuiltinFunction func(args ...Object) Object
 
 type ObjectType string
 

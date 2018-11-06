@@ -20,6 +20,9 @@ func Start(in io.Reader, out io.Writer) {
 	var consts []object.Object
 	globals := make([]object.Object, vm.GlobalsSize)
 	symbols := compiler.NewSymbolTable()
+	for i, v := range object.Builtins {
+		symbols.DefineBuiltin(i, v.Name)
+	}
 
 	for {
 		fmt.Printf(Prompt)
