@@ -379,6 +379,41 @@ func TestBuiltinFunctions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestClosures(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			name: "simple",
+			input: `let newClosure = fn(a) {
+						fn() { a; };
+					};
+					let closure = newClosure(99);
+					closure();`,
+			expected: 99.0,
+		},
+		{
+			name: "adder 1",
+			input: `let newAdder = fn(a, b) {
+						fn(c) { a + b + c };
+					};
+					let adder = newAdder(1, 2);
+					adder(8);`,
+			expected: 11.0,
+		},
+		{
+			name: "adder 2",
+			input: `let newAdder = fn(a, b) {
+						let c = a + b;
+						fn(d) { c + d };
+					};
+					let adder = newAdder(1, 2);
+					adder(8);`,
+			expected: 11.0,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
