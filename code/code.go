@@ -37,6 +37,7 @@ const (
 	OpGetLocal
 	OpSetLocal
 	OpGetBuiltin
+	OpGetFree
 
 	OpArray
 	OpHash
@@ -124,6 +125,7 @@ var definitions = map[OpCode]*Definition{
 	OpGetLocal:   {"OpGetLocal", []int{1}},
 	OpSetLocal:   {"OpSetLocal", []int{1}},
 	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
+	OpGetFree:    {"OpGetFree", []int{1}},
 
 	OpArray: {"OpArray", []int{2}},
 	OpHash:  {"OpHash", []int{2}},
