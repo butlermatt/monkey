@@ -6,50 +6,6 @@ import (
 	"fmt"
 )
 
-type OpCode byte
-
-const (
-	OpConstant OpCode = iota
-	OpPop
-
-	OpAdd
-	OpSub
-	OpMul
-	OpDiv
-
-	OpTrue
-	OpFalse
-	OpNull
-
-	OpEqual
-	OpNotEqual
-	OpGreater
-	OpGreaterEqual
-
-	OpMinus
-	OpBang
-
-	OpJumpNotTrue
-	OpJump
-
-	OpGetGlobal
-	OpSetGlobal
-	OpGetLocal
-	OpSetLocal
-	OpGetBuiltin
-	OpGetFree
-
-	OpArray
-	OpHash
-	OpIndex
-
-	OpCall
-	OpReturn
-	OpReturnValue
-
-	OpClosure
-)
-
 type Instructions []byte
 
 func (ins Instructions) String() string {
@@ -59,12 +15,12 @@ func (ins Instructions) String() string {
 	for i < len(ins) {
 		def, err := Lookup(ins[i])
 		if err != nil {
-			_, _ = fmt.Fprintf(&out, "ERROR: %s\n", err)
+			fmt.Fprintf(&out, "Error: %s\n", err)
 			continue
 		}
 
 		operands, read := ReadOperands(def, ins[i+1:])
-		_, _ = fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
+		fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
 
 		i += 1 + read
 	}
@@ -73,132 +29,89 @@ func (ins Instructions) String() string {
 }
 
 func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
-	count := len(def.OperandWidths)
+	operandCount := len(def.OperWidths)
 
-	if len(operands) != count {
-		return fmt.Sprintf("ERROR: operand length %d does not match defined %d\n", len(operands), count)
+	if len(operands) != operandCount {
+		return fmt.Sprintf("Error: operand len %d does not match defined %d\n", len(operands), operandCount)
 	}
 
-	switch count {
-	case 0:
-		return def.Name
+	switch operandCount {
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
-	case 2:
-		return fmt.Sprintf("%s %d %d", def.Name, operands[0], operands[1])
 	}
 
-	return fmt.Sprintf("ERROR: unhandled operandCount (%d) for %s\n", count, def.Name)
+	return fmt.Sprintf("Error: unhandled operandCount for %s\n", def.Name)
 }
+
+type Opcode byte
+
+const (
+	OpConstant Opcode = iota
+)
 
 type Definition struct {
-	Name          string
-	OperandWidths []int
+	Name       string
+	OperWidths []int
 }
 
-var definitions = map[OpCode]*Definition{
+var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
-	OpPop:      {"OpPop", []int{}},
-
-	OpAdd: {"OpAdd", []int{}},
-	OpSub: {"OpSub", []int{}},
-	OpMul: {"OpMul", []int{}},
-	OpDiv: {"OpDiv", []int{}},
-
-	OpTrue:  {"OpTrue", []int{}},
-	OpFalse: {"OpFalse", []int{}},
-	OpNull:  {"OpNull", []int{}},
-
-	OpEqual:        {"OpEqual", []int{}},
-	OpNotEqual:     {"OpNotEqual", []int{}},
-	OpGreater:      {"OpGreater", []int{}},
-	OpGreaterEqual: {"OpGreaterEqual", []int{}},
-
-	OpMinus: {"OpMinus", []int{}},
-	OpBang:  {"OpBang", []int{}},
-
-	OpJumpNotTrue: {"OpJumpNotTrue", []int{2}},
-	OpJump:        {"OpJump", []int{2}},
-
-	OpGetGlobal:  {"OpGetGlobal", []int{2}},
-	OpSetGlobal:  {"OpSetGlobal", []int{2}},
-	OpGetLocal:   {"OpGetLocal", []int{1}},
-	OpSetLocal:   {"OpSetLocal", []int{1}},
-	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
-	OpGetFree:    {"OpGetFree", []int{1}},
-
-	OpArray: {"OpArray", []int{2}},
-	OpHash:  {"OpHash", []int{2}},
-	OpIndex: {"OpIndex", []int{}},
-
-	OpCall:        {"OpCall", []int{1}},
-	OpReturn:      {"OpReturn", []int{}},
-	OpReturnValue: {"OpReturnValue", []int{}},
-
-	OpClosure: {"OpClosure", []int{2, 1}},
 }
 
+// Lookup accepts a byte op and returns the definition for that Opcode
 func Lookup(op byte) (*Definition, error) {
-	def, ok := definitions[OpCode(op)]
+	def, ok := definitions[Opcode(op)]
 	if !ok {
-		return nil, fmt.Errorf("opcode %d undefined", op)
+		return nil, fmt.Errorf("opcode %d is undefined", op)
 	}
 
 	return def, nil
 }
 
-func Make(op OpCode, operands ...int) []byte {
+// Make generates the required bytecode for a specific opCode with the number of operands required.
+func Make(op Opcode, operands ...int) []byte {
 	def, ok := definitions[op]
 	if !ok {
 		return []byte{}
 	}
 
 	instLen := 1
-	for _, w := range def.OperandWidths {
+	for _, w := range def.OperWidths {
 		instLen += w
 	}
 
-	instruction := make([]byte, instLen)
-	instruction[0] = byte(op)
+	inst := make([]byte, instLen)
+	inst[0] = byte(op)
 
 	offset := 1
 	for i, o := range operands {
-		width := def.OperandWidths[i]
+		width := def.OperWidths[i]
 		switch width {
-		case 1:
-			instruction[offset] = byte(o)
 		case 2:
-			binary.BigEndian.PutUint16(instruction[offset:], uint16(o))
+			binary.BigEndian.PutUint16(inst[offset:], uint16(o))
 		}
-
 		offset += width
 	}
 
-	return instruction
+	return inst
 }
 
 func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
-	oper := make([]int, len(def.OperandWidths))
+	operands := make([]int, len(def.OperWidths))
 	offset := 0
 
-	for i, width := range def.OperandWidths {
+	for i, width := range def.OperWidths {
 		switch width {
-		case 1:
-			oper[i] = int(ReadUint8(ins[offset:]))
 		case 2:
-			oper[i] = int(ReadUint16(ins[offset:]))
+			operands[i] = int(ReadUint16(ins[offset:]))
 		}
 
 		offset += width
 	}
 
-	return oper, offset
+	return operands, offset
 }
 
 func ReadUint16(ins Instructions) uint16 {
 	return binary.BigEndian.Uint16(ins)
-}
-
-func ReadUint8(ins Instructions) uint8 {
-	return uint8(ins[0])
 }
