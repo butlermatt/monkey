@@ -3,7 +3,6 @@ package repl
 import (
 	"bufio"
 	"fmt"
-	"github.com/butlermatt/monkey/object"
 	"io"
 
 	"github.com/butlermatt/monkey/compiler"
@@ -16,13 +15,6 @@ const Prompt = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-
-	var consts []object.Object
-	globals := make([]object.Object, vm.GlobalsSize)
-	symbols := compiler.NewSymbolTable()
-	for i, v := range object.Builtins {
-		symbols.DefineBuiltin(i, v.Name)
-	}
 
 	for {
 		fmt.Printf(Prompt)
@@ -39,23 +31,22 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		comp := compiler.NewWithState(symbols, consts)
+		comp := compiler.New()
 		err := comp.Compile(program)
 		if err != nil {
 			_, _ = fmt.Fprintf(out, "Woops! Compilation failed:\n%s\n", err)
 			continue
 		}
 
-		code := comp.ByteCode()
-		consts = code.Constants
+		code := comp.Bytecode()
 
-		machine := vm.NewWithGlobalStore(code, globals)
+		machine := vm.New(code)
 		err = machine.Run()
 		if err != nil {
 			_, _ = fmt.Fprintf(out, "Woops! Executing bytecode failed:\n%s\n", err)
 		}
 
-		lastStack := machine.LastPoppedStackElem()
+		lastStack := machine.StackTop()
 		_, _ = io.WriteString(out, lastStack.Inspect())
 		_, _ = io.WriteString(out, "\n")
 	}
