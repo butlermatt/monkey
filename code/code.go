@@ -6,6 +6,13 @@ import (
 	"fmt"
 )
 
+type Opcode byte
+
+const (
+	OpConstant Opcode = iota
+	OpAdd
+)
+
 type Instructions []byte
 
 func (ins Instructions) String() string {
@@ -36,18 +43,14 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 	}
 
 	switch operandCount {
+	case 0:
+		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
 
 	return fmt.Sprintf("Error: unhandled operandCount for %s\n", def.Name)
 }
-
-type Opcode byte
-
-const (
-	OpConstant Opcode = iota
-)
 
 type Definition struct {
 	Name       string
@@ -56,6 +59,7 @@ type Definition struct {
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
+	OpAdd:      {"OpAdd", []int{}},
 }
 
 // Lookup accepts a byte op and returns the definition for that Opcode
